@@ -4,6 +4,7 @@ local capi =
     client = client,
     mouse = mouse,
     screen = screen,
+    keygrabber = keygrabber
 }
 
 local setmetatable = setmetatable
@@ -150,6 +151,19 @@ function module.bydirection(dir, c)
                 wiboxes[v]:set_widget(m)
                 wiboxes[v].shape_bounding = bounding
             end
+            wiboxes["center"] = wibox({})
+            wiboxes["center"].height = 75
+            wiboxes["center"].width  = 75
+            wiboxes["center"].ontop = true
+            wiboxes["center"]:set_bg(beautiful.bg_urgent)
+            local img = cairo.ImageSurface(cairo.Format.ARGB32, 75,75)
+            local cr = cairo.Context(img)
+            cr:set_source_rgba(0,0,0,0)
+            cr:paint()
+            cr:set_source_rgba(1,1,1,1)
+            cr:arc( 75/2,75/2,75/2,0,2*math.pi  )
+            cr:fill()
+            wiboxes["center"].shape_bounding = img._native
         end
         for k,v in ipairs({"left","right","up","down"}) do
             if next_clients[v] then
@@ -161,10 +175,14 @@ function module.bydirection(dir, c)
                 wiboxes[v].visible = false
             end
         end
+        local geo = capi.client.focus:geometry()
+        wiboxes["center"].x = geo.x + geo.width/2 - 75/2
+        wiboxes["center"].y = geo.y + geo.height/2 - 75/2
+        wiboxes["center"].visible = true
     end
 end
 
-function module.global_bydirection(dir, c)
+local function global_bydirection_real(dir, c)
     local sel = c or capi.client.focus
     local scr = capi.mouse.screen
     if sel then
@@ -192,4 +210,38 @@ function module.global_bydirection(dir, c)
         end
     end
 end
+
+function module.global_bydirection(dir, c)
+    global_bydirection_real(dir, c)
+    capi.keygrabber.run(function(mod, key, event)
+        if key == "Up" or key == "&" or key == "XF86AudioPause" or key == "F15" then
+            if event == "press" then
+                global_bydirection_real("up")
+            end
+            return true
+        elseif key == "Down" or key == "KP_Enter" or key == "XF86WebCam" or key == "F14"  then
+            if event == "press" then
+                global_bydirection_real("down")
+            end
+            return true
+        elseif key == "Left" or key == "#"  or key == "Cancel" or key == "F13" then
+            if event == "press" then
+                global_bydirection_real("left")
+            end
+            return true
+        elseif key == "Right" or key == "\""or key == "XF86Paste" or key == "F17" then
+            if event == "press" then
+                global_bydirection_real("right")
+            end
+            return true
+        end
+
+        for k,v in ipairs({"left","right","up","down","center"}) do
+            wiboxes[v].visible = false
+        end
+        capi.keygrabber.stop()
+        return false
+    end)
+end
+
 return setmetatable(module, { __call = function(_, ...) return new(...) end })
