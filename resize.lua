@@ -1,14 +1,15 @@
 local capi = { client = client, mouse     = mouse      ,
                screen = screen, keygrabber = keygrabber}
-local ipairs,print = ipairs,print
+local ipairs,print    = ipairs,print
 local wibox,color     = require( "wibox" )    , require( "gears.color" )
 local cairo,beautiful = require( "lgi").cairo , require( "beautiful"   )
+local awful           = require("awful")
 local module,indicators,cur_c = {},nil,nil
 
-local values = {"top"     , "topright"  , "right" ,  "bottomright" ,
-                "bottom"  , "bottomleft", "left"  ,  "topleft"     }
+local values = {"top"     , "top_right"  , "right" ,  "bottom_right" ,
+                "bottom"  , "bottom_left", "left"  ,  "top_left"     }
 
-local function create_arrow(width, height,margin,bg_color,fg_color)
+module.create_arrow = function(width, height,margin,bg_color,fg_color)
     local img = cairo.ImageSurface(cairo.Format.ARGB32, width+2*margin, height+2*margin)
     local cr = cairo.Context(img)
     cr:set_source(color(bg_color))
@@ -30,14 +31,14 @@ local function gen_shape_bounding(radius)
   cr:paint          (                                         )
   cr:set_source_rgba(1,1,1,1                                  )
   cr:arc            ( radius/2,radius/2,radius/2,0,2*math.pi  )
-  cr:fill()
+  cr:fill           (                                         )
   return img._native
 end
 
 local function create_indicators()
   indicators           = {}
-  local arr            = create_arrow( 20, 20, 10, beautiful.bg_alternate,beautiful.fg_normal )
-  local arr_focus      = create_arrow( 20, 20, 10, beautiful.fg_normal,beautiful.bg_normal    )
+  local arr            = module.create_arrow( 20, 20, 10, beautiful.bg_alternate,beautiful.fg_normal )
+  local arr_focus      = module.create_arrow( 20, 20, 10, beautiful.fg_normal,beautiful.bg_normal    )
   local angle          = 0
   local shape_bounding = gen_shape_bounding(40)
   for k,v in ipairs(values) do
@@ -59,42 +60,30 @@ local function create_indicators()
     w:set_bg(beautiful.bg_alternate)
     w:connect_signal("mouse::enter",function() ib:set_image(arr_rot_focus) end)
     w:connect_signal("mouse::leave",function() ib:set_image(arr_rot)       end)
+    ib:buttons( awful.util.table.join(
+      awful.button({ }, 1, function(geometry)
+        ib:set_image(arr_rot)
+        awful.mouse.client.resize(cur_c,v,function(c) module.display(c,true) end)
+    end)))
     indicators[v] = w
   end
 end
 
 local placement_f = {
-  left        = function(g) return {x = g.x             , y = g.y + g.height/2 } end,
-  topleft     = function(g) return {x = g.x             , y = g.y              } end,
-  bottomleft  = function(g) return {x = g.x             , y = g.y+g.height     } end,
-  right       = function(g) return {x = g.x + g.width   , y = g.y+g.height/2   } end,
-  topright    = function(g) return {x = g.x + g.width   , y = g.y              } end,
-  bottomright = function(g) return {x = g.x + g.width   , y = g.y+g.height     } end,
-  top         = function(g) return {x = g.x + g.width/2 , y = g.y              } end,
-  bottom      = function(g) return {x = g.x + g.width/2 , y = g.y+g.height     } end,
+  left         = function(g) return {x = g.x             , y = g.y + g.height/2 } end,
+  top_left     = function(g) return {x = g.x             , y = g.y              } end,
+  bottom_left  = function(g) return {x = g.x             , y = g.y+g.height     } end,
+  right        = function(g) return {x = g.x + g.width   , y = g.y+g.height/2   } end,
+  top_right    = function(g) return {x = g.x + g.width   , y = g.y              } end,
+  bottom_right = function(g) return {x = g.x + g.width   , y = g.y+g.height     } end,
+  top          = function(g) return {x = g.x + g.width/2 , y = g.y              } end,
+  bottom       = function(g) return {x = g.x + g.width/2 , y = g.y+g.height     } end,
 }
 
-local move_f = {
-  left        = function(c)  end,
-  topleft     = function(c)  end,
-  bottomleft  = function(c)  end,
-  right       = function(c)  end,
-  topright    = function(c)  end,
-  bottomright = function(c)  end,
-  top         = function(c)  end,
-  bottom      = function(c)  end,
-}
-
-module.display = function(c)
+module.display = function(c,toggle)
   c = c or capi.client.focus
   if not indicators then
     create_indicators()
-  end
-  for k,v in ipairs(values) do
-    local w = indicators[v]
-    local pos = placement_f[v](c:geometry())
-    w.x = pos.x - 20
-    w.y = pos.y - 20
   end
   if c ~= cur_c then
     if cur_c then
@@ -102,6 +91,15 @@ module.display = function(c)
     end
     c:connect_signal("property::geometry", module.display)
     cur_c = c
+  elseif toggle == true then
+    for k,v in ipairs(values) do indicators[v].visible = false end
+    cur_c:disconnect_signal("property::geometry", module.display)
+    cur_c = nil
+    return
+  end
+  for k,v in ipairs(values) do
+    local w,pos   = indicators[v],placement_f[v](c:geometry())
+    w.x,w.y,w.visible       = pos.x - 20,pos.y - 20,true
   end
 end
 
