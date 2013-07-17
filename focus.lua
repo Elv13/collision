@@ -1,22 +1,15 @@
-
-local capi =
-{
-    client = client,
-    mouse = mouse,
-    screen = screen,
-    keygrabber = keygrabber
-}
+local capi = { client = client , mouse      = mouse     ,
+               screen = screen , keygrabber = keygrabber,}
 
 local setmetatable = setmetatable
-local print = print
-local ipairs = ipairs
-local util = require("awful.util")
-local client = require("awful.client")
-local screen = require("awful.screen")
-local wibox = require("wibox")
-local cairo = require("lgi").cairo
+local ipairs       = ipairs
+local util         = require( "awful.util"   )
+local client       = require( "awful.client" )
+local screen       = require( "awful.screen" )
+local wibox        = require( "wibox"        )
+local cairo        = require( "lgi"          ).cairo
 local beautiful    = require( "beautiful"    )
-local color = require("gears.color")
+local color        = require( "gears.color"  )
 
 local module = {}
 
@@ -40,9 +33,8 @@ local function gen(item_height)
   return img._native
 end
 
-local constructor = {
- up = function (width, height)
-    local img = cairo.ImageSurface(cairo.Format.ARGB32, width, height)
+local function constructor(width)
+    local img = cairo.ImageSurface(cairo.Format.ARGB32, width, width)
     local cr = cairo.Context(img)
     cr:move_to(0,0)
     cr:set_source(color(beautiful.fg_normal))
@@ -56,66 +48,48 @@ local constructor = {
         cr:rectangle(width-i, 0, 1, (width/2)-i)
     end
     cr:fill()
-    return img
-end,
-
- down = function (width, height)
-    local img = cairo.ImageSurface(cairo.Format.ARGB32, width, height)
-    local cr = cairo.Context(img)
-    cr:set_source(color(beautiful.fg_normal))
-    cr:paint()
-    cr:set_source(color(beautiful.bg_normal))
-    cr:set_antialias(1)
-    cr:rectangle(0, 0, 10, (width/2))
-    cr:rectangle(width-10, 0, 10, (width/2))
-    for i=0,(width/2) do
-        cr:rectangle((width/2)+i, height-i, 1, i)
-        cr:rectangle((width/2)-i, height-i, 1, i)
-    end
-    cr:fill()
-    return img
-end,
-
- right = function (width, height)
-    local img = cairo.ImageSurface(cairo.Format.ARGB32, width, height)
-    local cr = cairo.Context(img)
-    cr:set_source(color(beautiful.fg_normal))
-    cr:paint()
-    cr:set_source(color(beautiful.bg_normal))
-    cr:set_antialias(1)
-    cr:rectangle(0, 0, (width/2), 10)
-    cr:rectangle(0, height-10, (width/2), 10)
-    for i=0,(width/2) do
-        cr:rectangle(width-i, (width/2)+i, i, 1)
-        cr:rectangle(width-i, (width/2)-i, i, 1)
-    end
-    cr:fill()
-    return img
-end,
-
- left = function (width, height)
-    local img = cairo.ImageSurface(cairo.Format.ARGB32, width, height)
-    local cr = cairo.Context(img)
-    cr:set_source(color(beautiful.fg_normal))
-    cr:paint()
-    cr:set_source(color(beautiful.bg_normal))
-    cr:set_antialias(1)
-    cr:rectangle((width/2), 0, (width/2), 10)
-    cr:rectangle((width/2), height-10, (width/2), 10)
-    for i=0,(width/2) do
-        cr:rectangle(0, i, (width/2)-i, 1)
-        cr:rectangle(0, (width/2)+i, i, 1)
-    end
-    cr:fill()
-    return img
+    return cairo.Pattern.create_for_surface(img)
 end
-}
+
+local function init()
+    local bounding,arrow = gen(75),constructor(55)
+    wiboxes = {}
+    for k,v in ipairs({"up","right","down","left","center"}) do
+        wiboxes[v] = wibox({})
+        wiboxes[v].height = 75
+        wiboxes[v].width  = 75
+        wiboxes[v].ontop  = true
+        if v ~= "center" then
+            local ib,m = wibox.widget.imagebox(),wibox.layout.margin()
+            local img = cairo.ImageSurface(cairo.Format.ARGB32, 55, 55)
+            local cr = cairo.Context(img)
+            cr:translate(55/2,55/2)
+            cr:rotate((k-1)*(2*math.pi)/4)
+            cr:translate(-(55/2),-(55/2))
+            cr:set_source(arrow)
+            cr:paint()
+            ib:set_image(img)
+            m:set_margins(10)
+            m:set_widget(ib)
+            wiboxes[v]:set_widget(m)
+            wiboxes[v].shape_bounding = bounding
+        end
+    end
+    wiboxes["center"]:set_bg(beautiful.bg_urgent)
+    local img = cairo.ImageSurface(cairo.Format.ARGB32, 75,75)
+    local cr = cairo.Context(img)
+    cr:set_source_rgba(0,0,0,0)
+    cr:paint()
+    cr:set_source_rgba(1,1,1,1)
+    cr:arc( 75/2,75/2,75/2,0,2*math.pi  )
+    cr:fill()
+    wiboxes["center"].shape_bounding = img._native
+end
 
 function module.bydirection(dir, c)
     local sel = c or capi.client.focus
     if sel then
-        local cltbl = client.visible(sel.screen)
-        local geomtbl = {}
+        local cltbl,geomtbl = client.visible(sel.screen),{}
         for i,cl in ipairs(cltbl) do
             geomtbl[i] = cl:geometry()
         end
@@ -128,46 +102,13 @@ function module.bydirection(dir, c)
             capi.client.focus:raise()
         end
 
-        local next_clients = {
-            left  =  cltbl[util.get_rectangle_in_direction("left" , geomtbl, capi.client.focus:geometry())],
-            right =  cltbl[util.get_rectangle_in_direction("right", geomtbl, capi.client.focus:geometry())],
-            up    =  cltbl[util.get_rectangle_in_direction("up"   , geomtbl, capi.client.focus:geometry())],
-            down  =  cltbl[util.get_rectangle_in_direction("down" , geomtbl, capi.client.focus:geometry())],
-        }
-
         if not wiboxes then
-            local bounding = gen(75)
-            wiboxes = {}
-            for k,v in ipairs({"left","right","up","down"}) do
-                wiboxes[v] = wibox({})
-                wiboxes[v].height = 75
-                wiboxes[v].width  = 75
-                wiboxes[v].ontop  = true
-                local ib = wibox.widget.imagebox()
-                ib:set_image(constructor[v](55,55))
-                local m = wibox.layout.margin(arrow)
-                m:set_margins(10)
-                m:set_widget(ib)
-                wiboxes[v]:set_widget(m)
-                wiboxes[v].shape_bounding = bounding
-            end
-            wiboxes["center"] = wibox({})
-            wiboxes["center"].height = 75
-            wiboxes["center"].width  = 75
-            wiboxes["center"].ontop = true
-            wiboxes["center"]:set_bg(beautiful.bg_urgent)
-            local img = cairo.ImageSurface(cairo.Format.ARGB32, 75,75)
-            local cr = cairo.Context(img)
-            cr:set_source_rgba(0,0,0,0)
-            cr:paint()
-            cr:set_source_rgba(1,1,1,1)
-            cr:arc( 75/2,75/2,75/2,0,2*math.pi  )
-            cr:fill()
-            wiboxes["center"].shape_bounding = img._native
+            init()
         end
-        for k,v in ipairs({"left","right","up","down"}) do
-            if next_clients[v] then
-                local geo = next_clients[v]:geometry()
+        for k,v in ipairs({"left","right","up","down","center"}) do
+            local next_clients = cltbl[util.get_rectangle_in_direction(v , geomtbl, capi.client.focus:geometry())]
+            if next_clients or v == "center" then
+                local geo = v == "center" and capi.client.focus:geometry() or next_clients:geometry()
                 wiboxes[v].visible = true
                 wiboxes[v].x = geo.x + geo.width/2 - 75/2
                 wiboxes[v].y = geo.y + geo.height/2 - 75/2
@@ -175,10 +116,6 @@ function module.bydirection(dir, c)
                 wiboxes[v].visible = false
             end
         end
-        local geo = capi.client.focus:geometry()
-        wiboxes["center"].x = geo.x + geo.width/2 - 75/2
-        wiboxes["center"].y = geo.y + geo.height/2 - 75/2
-        wiboxes["center"].visible = true
     end
 end
 
