@@ -86,7 +86,7 @@ local function init()
     wiboxes["center"].shape_bounding = img._native
 end
 
-function module.bydirection(dir, c)
+function module.bydirection(dir, c, swap)
     local sel = c or capi.client.focus
     if sel then
         local cltbl,geomtbl = client.visible(sel.screen),{}
@@ -98,8 +98,12 @@ function module.bydirection(dir, c)
 
         -- If we found a client to focus, then do it.
         if target then
-            capi.client.focus = cltbl[target]
-            capi.client.focus:raise()
+            if swap ~= true then
+               capi.client.focus = cltbl[target]
+               capi.client.focus:raise()
+            else
+               c:swap(cltbl[target])
+            end
         end
 
         if not wiboxes then
@@ -119,7 +123,7 @@ function module.bydirection(dir, c)
     end
 end
 
-local function global_bydirection_real(dir, c)
+local function global_bydirection_real(dir, c, swap)
     local sel = c or capi.client.focus
     local scr = capi.mouse.screen
     if sel then
@@ -127,7 +131,7 @@ local function global_bydirection_real(dir, c)
     end
 
     -- change focus inside the screen
-    module.bydirection(dir, sel)
+    module.bydirection(dir, sel,swap)
 
     -- if focus not changed, we must change screen
     if sel == capi.client.focus then
@@ -141,36 +145,43 @@ local function global_bydirection_real(dir, c)
             local target = util.get_rectangle_in_direction(dir, geomtbl, capi.screen[scr].geometry)
 
             if target then
+               if swap ~= true then
                 capi.client.focus = cltbl[target]
                 capi.client.focus:raise()
+               else
+                  c:swap(cltbl[target])
+               end
             end
         end
     end
 end
 
-function module.global_bydirection(dir, c)
-    global_bydirection_real(dir, c)
+function module.global_bydirection(dir, c,swap)
+    global_bydirection_real(dir, c, swap)
     capi.keygrabber.run(function(mod, key, event)
+        local is_swap = mod[1] == "Shift" or mod[2] == "Shift"
         if key == "Up" or key == "&" or key == "XF86AudioPause" or key == "F15" then
             if event == "press" then
-                global_bydirection_real("up")
+                global_bydirection_real("up",nil,is_swap)
             end
             return true
         elseif key == "Down" or key == "KP_Enter" or key == "XF86WebCam" or key == "F14"  then
             if event == "press" then
-                global_bydirection_real("down")
+                global_bydirection_real("down",nil,is_swap)
             end
             return true
         elseif key == "Left" or key == "#"  or key == "Cancel" or key == "F13" then
             if event == "press" then
-                global_bydirection_real("left")
+                global_bydirection_real("left",nil,is_swap)
             end
             return true
         elseif key == "Right" or key == "\""or key == "XF86Paste" or key == "F17" then
             if event == "press" then
-                global_bydirection_real("right")
+                global_bydirection_real("right",nil,is_swap)
             end
             return true
+        elseif key == "Shift_L" or key == "Shift_R" then
+           return true
         end
 
         for k,v in ipairs({"left","right","up","down","center"}) do
