@@ -80,8 +80,8 @@ local placement_f = {
   bottom       = function(g) return {x = g.x + g.width/2 , y = g.y+g.height     } end,
 }
 
-module.display = function(c,toggle)
-  c = c or capi.client.focus
+function module.display(c,toggle)
+  local c = c or capi.client.focus
   if not indicators then
     create_indicators()
   end

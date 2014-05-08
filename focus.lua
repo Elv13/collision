@@ -12,8 +12,8 @@ local beautiful    = require( "beautiful"    )
 local color        = require( "gears.color"  )
 
 local module = {}
-
-local wiboxes = nil
+local wiboxes,delta = nil,60
+local float_move = {left={-delta,0},right={delta,0},up={0,-delta},down={0,delta}}
 
 local function gen(item_height)
   local img = cairo.ImageSurface(cairo.Format.ARGB32, item_height,item_height)
@@ -89,15 +89,18 @@ end
 function module.bydirection(dir, c, swap)
     local sel = c or capi.client.focus
     if sel then
-        local cltbl,geomtbl = client.visible(sel.screen),{}
+        local cltbl,geomtbl,float = client.visible(--[[sel.screen]]),{},client.floating.get(c)
         for i,cl in ipairs(cltbl) do
             geomtbl[i] = cl:geometry()
         end
 
         local target = util.get_rectangle_in_direction(dir, geomtbl, sel:geometry())
 
+        -- Move the client if floating, swaping wont work anyway
+        if swap and float then
+            sel:geometry({x=sel:geometry().x+float_move[dir][1],y=sel:geometry().y+float_move[dir][2]})
         -- If we found a client to focus, then do it.
-        if target then
+        elseif target then
             if swap ~= true then
                capi.client.focus = cltbl[target]
                capi.client.focus:raise()
@@ -110,12 +113,13 @@ function module.bydirection(dir, c, swap)
             init()
         end
         for k,v in ipairs({"left","right","up","down","center"}) do
-            local next_clients = cltbl[util.get_rectangle_in_direction(v , geomtbl, capi.client.focus:geometry())]
-            if next_clients or v == "center" then
-                local geo = v == "center" and capi.client.focus:geometry() or next_clients:geometry()
+            local next_clients = (not (float and swap)) and cltbl[util.get_rectangle_in_direction(v , geomtbl, capi.client.focus:geometry())] or sel
+            if next_clients or k==5 then
+                local same, center = capi.client.focus == next_clients,k==5
+                local geo = center and capi.client.focus:geometry() or next_clients:geometry()
                 wiboxes[v].visible = true
-                wiboxes[v].x = geo.x + geo.width/2 - 75/2
-                wiboxes[v].y = geo.y + geo.height/2 - 75/2
+                wiboxes[v].x = (swap and float and (not center)) and (geo.x + (k>2 and (geo.width/2) or 0) + (k==2 and geo.width or 0) - 75/2) or (geo.x + geo.width/2 - 75/2)
+                wiboxes[v].y = (swap and float and (not center)) and (geo.y + (k<=2 and geo.height/2 or 0) + (k==4 and geo.height or 0) - 75/2) or (geo.y + geo.height/2 - 75/2)
             else
                 wiboxes[v].visible = false
             end
@@ -123,21 +127,18 @@ function module.bydirection(dir, c, swap)
     end
 end
 
-local function global_bydirection_real(dir, c, swap)
+function module._global_bydirection_real(dir, c, swap)
     local sel = c or capi.client.focus
-    local scr = capi.mouse.screen
-    if sel then
-        scr = sel.screen
-    end
+    local scr = sel and sel.screen or capi.mouse.screen
 
     -- change focus inside the screen
     module.bydirection(dir, sel,swap)
 
     -- if focus not changed, we must change screen
-    if sel == capi.client.focus then
+    if sel == capi.client.focus and not swap then
         screen.focus_bydirection(dir, scr)
         if scr ~= capi.mouse.screen then
-            local cltbl = client.visible(capi.mouse.screen)
+            local cltbl = client.visible(--[[capi.mouse.screen]])
             local geomtbl = {}
             for i,cl in ipairs(cltbl) do
                 geomtbl[i] = cl:geometry()
@@ -148,48 +149,47 @@ local function global_bydirection_real(dir, c, swap)
                if swap ~= true then
                 capi.client.focus = cltbl[target]
                 capi.client.focus:raise()
-               else
-                  c:swap(cltbl[target])
+               elseif sel then
+                  sel:swap(cltbl[target])
                end
             end
         end
     end
 end
 
-function module.global_bydirection(dir, c,swap)
-    global_bydirection_real(dir, c, swap)
-    capi.keygrabber.run(function(mod, key, event)
-        local is_swap = mod[1] == "Shift" or mod[2] == "Shift"
-        if key == "Up" or key == "&" or key == "XF86AudioPause" or key == "F15" then
-            if event == "press" then
-                global_bydirection_real("up",nil,is_swap)
-            end
-            return true
-        elseif key == "Down" or key == "KP_Enter" or key == "XF86WebCam" or key == "F14"  then
-            if event == "press" then
-                global_bydirection_real("down",nil,is_swap)
-            end
-            return true
-        elseif key == "Left" or key == "#"  or key == "Cancel" or key == "F13" then
-            if event == "press" then
-                global_bydirection_real("left",nil,is_swap)
-            end
-            return true
-        elseif key == "Right" or key == "\""or key == "XF86Paste" or key == "F17" then
-            if event == "press" then
-                global_bydirection_real("right",nil,is_swap)
-            end
-            return true
-        elseif key == "Shift_L" or key == "Shift_R" then
-           return true
-        end
+local keys = {--Normal  Xephyr        G510 alt         G510
+    up    = {"Up"    , "&"        , "XF86AudioPause" , "F15" },
+    down  = {"Down"  , "KP_Enter" , "XF86WebCam"     , "F14" },
+    left  = {"Left"  , "#"        , "Cancel"         , "F13" },
+    right = {"Right" , "\""       , "XF86Paste"      , "F17" }
+}
 
-        for k,v in ipairs({"left","right","up","down","center"}) do
-            wiboxes[v].visible = false
+function module.global_bydirection(dir, c,swap)
+    module._global_bydirection_real(dir, c, swap)
+end
+
+function module._global_bydirection_key(mod,key,event)
+    local is_swap = not util.table.hasitem(mod,"Shift")
+    print("IS",is_swap)
+
+    for k,v in pairs(keys) do
+        if util.table.hasitem(v,key) then
+            if event == "press" then
+                module._global_bydirection_real(k,nil,is_swap)
+            end
+            return true
         end
-        capi.keygrabber.stop()
-        return false
-    end)
+    end
+
+    if key == "Shift_L" or key == "Shift_R" then
+        return true
+    end
+
+    for k,v in ipairs({"left","right","up","down","center"}) do
+        wiboxes[v].visible = false
+    end
+    capi.keygrabber.stop()
+    return false
 end
 
 return setmetatable(module, { __call = function(_, ...) return new(...) end })
