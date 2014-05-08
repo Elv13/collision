@@ -12,9 +12,9 @@ local beautiful    = require( "beautiful"    )
 local color        = require( "gears.color"  )
 
 local module = {}
-local wiboxes,delta = nil,60
-local float_move = {left={-delta,0},right={delta,0},up={0,-delta},down={0,delta}}
+local wiboxes,delta = nil,100
 
+---------------- Visual -----------------------
 local function gen(item_height)
   local img = cairo.ImageSurface(cairo.Format.ARGB32, item_height,item_height)
   local cr = cairo.Context(img)
@@ -86,110 +86,83 @@ local function init()
     wiboxes["center"].shape_bounding = img._native
 end
 
-function module.bydirection(dir, c, swap)
-    local sel = c or capi.client.focus
-    if sel then
-        local cltbl,geomtbl,float = client.visible(--[[sel.screen]]),{},client.floating.get(c)
-        for i,cl in ipairs(cltbl) do
-            geomtbl[i] = cl:geometry()
-        end
-
-        local target = util.get_rectangle_in_direction(dir, geomtbl, sel:geometry())
-
-        -- Move the client if floating, swaping wont work anyway
-        if swap and float then
-            sel:geometry({x=sel:geometry().x+float_move[dir][1],y=sel:geometry().y+float_move[dir][2]})
-        -- If we found a client to focus, then do it.
-        elseif target then
-            if swap ~= true then
-               capi.client.focus = cltbl[target]
-               capi.client.focus:raise()
-            else
-               c:swap(cltbl[target])
-            end
-        end
-
-        if not wiboxes then
-            init()
-        end
-        for k,v in ipairs({"left","right","up","down","center"}) do
-            local next_clients = (not (float and swap)) and cltbl[util.get_rectangle_in_direction(v , geomtbl, capi.client.focus:geometry())] or sel
-            if next_clients or k==5 then
-                local same, center = capi.client.focus == next_clients,k==5
-                local geo = center and capi.client.focus:geometry() or next_clients:geometry()
-                wiboxes[v].visible = true
-                wiboxes[v].x = (swap and float and (not center)) and (geo.x + (k>2 and (geo.width/2) or 0) + (k==2 and geo.width or 0) - 75/2) or (geo.x + geo.width/2 - 75/2)
-                wiboxes[v].y = (swap and float and (not center)) and (geo.y + (k<=2 and geo.height/2 or 0) + (k==4 and geo.height or 0) - 75/2) or (geo.y + geo.height/2 - 75/2)
-            else
-                wiboxes[v].visible = false
-            end
+local function move_wiboxes(cltbl,geomtbl,float,swap,c)
+    if not wiboxes then
+        init()
+    end
+    for k,v in ipairs({"left","right","up","down","center"}) do
+        local next_clients = (not (float and swap)) and cltbl[util.get_rectangle_in_direction(v , geomtbl, capi.client.focus:geometry())] or c
+        if next_clients or k==5 then
+            local same, center = capi.client.focus == next_clients,k==5
+            local geo = center and capi.client.focus:geometry() or next_clients:geometry()
+            wiboxes[v].visible = true
+            wiboxes[v].x = (swap and float and (not center)) and (geo.x + (k>2 and (geo.width/2) or 0) + (k==2 and geo.width or 0) - 75/2) or (geo.x + geo.width/2 - 75/2)
+            wiboxes[v].y = (swap and float and (not center)) and (geo.y + (k<=2 and geo.height/2 or 0) + (k==4 and geo.height or 0) - 75/2) or (geo.y + geo.height/2 - 75/2)
+        else
+            wiboxes[v].visible = false
         end
     end
 end
 
-function module._global_bydirection_real(dir, c, swap)
-    local sel = c or capi.client.focus
-    local scr = sel and sel.screen or capi.mouse.screen
+---------------- Position -----------------------
+local function float_move(dir,c)
+    return ({left={x=c:geometry().x-delta},right={x=c:geometry().x+delta},up={y=c:geometry().y-delta},down={y=c:geometry().y+delta}})[dir]
+end
 
-    -- change focus inside the screen
-    module.bydirection(dir, sel,swap)
+local function float_move_max(dir,c)
+    return ({left={x=capi.screen[c.screen].geometry.x},right={x=capi.screen[c.screen].geometry.width+capi.screen[c.screen].geometry.x-c:geometry().width}
+        ,up={y=capi.screen[c.screen].geometry.y},down={y=capi.screen[c.screen].geometry.y+capi.screen[c.screen].geometry.height-c:geometry().height}})[dir]
+end
 
-    -- if focus not changed, we must change screen
-    if sel == capi.client.focus and not swap then
-        screen.focus_bydirection(dir, scr)
-        if scr ~= capi.mouse.screen then
-            local cltbl = client.visible(--[[capi.mouse.screen]])
-            local geomtbl = {}
+local function floating_clients()
+    local ret = {}
+    for v in util.table.iterate(client.visible(),function(c) return client.floating.get(c) end) do
+        ret[#ret+1] = v
+    end
+    return ret
+end
+
+local function bydirection(dir, c, swap,max)
+    if c then
+        local float = client.floating.get(c)
+        -- Move the client if floating, swaping wont work anyway
+        if swap and float then
+            c:geometry((max and float_move_max or float_move)(dir,c))
+            move_wiboxes(nil,nil,float,swap,c)
+        else
+            -- Get all clients rectangle
+            local cltbl,geomtbl = max and floating_clients() or client.visible(),{}
             for i,cl in ipairs(cltbl) do
                 geomtbl[i] = cl:geometry()
             end
-            local target = util.get_rectangle_in_direction(dir, geomtbl, capi.screen[scr].geometry)
-
+            local target = util.get_rectangle_in_direction(dir, geomtbl, c:geometry())
+            -- If we found a client to focus, then do it.
             if target then
-               if swap ~= true then
-                capi.client.focus = cltbl[target]
-                capi.client.focus:raise()
-               elseif sel then
-                  sel:swap(cltbl[target])
-               end
+                if swap ~= true then
+                    capi.client.focus = cltbl[target]
+                    capi.client.focus:raise()
+                else
+                    c:swap(cltbl[target])
+                end
+                move_wiboxes(cltbl,geomtbl,float,swap,c)
             end
         end
     end
 end
 
-local keys = {--Normal  Xephyr        G510 alt         G510
-    up    = {"Up"    , "&"        , "XF86AudioPause" , "F15" },
-    down  = {"Down"  , "KP_Enter" , "XF86WebCam"     , "F14" },
-    left  = {"Left"  , "#"        , "Cancel"         , "F13" },
-    right = {"Right" , "\""       , "XF86Paste"      , "F17" }
-}
-
-function module.global_bydirection(dir, c,swap)
-    module._global_bydirection_real(dir, c, swap)
+function module.global_bydirection(dir, c,swap,max)
+    bydirection(dir, c or capi.client.focus, swap,max)
 end
 
-function module._global_bydirection_key(mod,key,event)
-    local is_swap = not util.table.hasitem(mod,"Shift")
-    print("IS",is_swap)
+function module._global_bydirection_key(mod,key,event,direction,is_swap,is_max)
+    bydirection(direction,capi.client.focus,is_swap,is_max)
+    return true
+end
 
-    for k,v in pairs(keys) do
-        if util.table.hasitem(v,key) then
-            if event == "press" then
-                module._global_bydirection_real(k,nil,is_swap)
-            end
-            return true
-        end
-    end
-
-    if key == "Shift_L" or key == "Shift_R" then
-        return true
-    end
-
+function module._quit()
     for k,v in ipairs({"left","right","up","down","center"}) do
         wiboxes[v].visible = false
     end
-    capi.keygrabber.stop()
-    return false
 end
 
 return setmetatable(module, { __call = function(_, ...) return new(...) end })
