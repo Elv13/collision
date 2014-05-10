@@ -110,8 +110,8 @@ local function float_move(dir,c)
 end
 
 local function float_move_max(dir,c)
-    return ({left={x=capi.screen[c.screen].geometry.x},right={x=capi.screen[c.screen].geometry.width+capi.screen[c.screen].geometry.x-c:geometry().width}
-        ,up={y=capi.screen[c.screen].geometry.y},down={y=capi.screen[c.screen].geometry.y+capi.screen[c.screen].geometry.height-c:geometry().height}})[dir]
+    return ({left={x=capi.screen[c.screen].workarea.x},right={x=capi.screen[c.screen].workarea.width+capi.screen[c.screen].workarea.x-c:geometry().width}
+        ,up={y=capi.screen[c.screen].workarea.y},down={y=capi.screen[c.screen].workarea.y+capi.screen[c.screen].workarea.height-c:geometry().height}})[dir]
 end
 
 local function floating_clients()
@@ -131,7 +131,7 @@ local function bydirection(dir, c, swap,max)
             move_wiboxes(nil,nil,float,swap,c)
         else
             -- Get all clients rectangle
-            local cltbl,geomtbl = max and floating_clients() or client.visible(),{}
+            local cltbl,geomtbl = max and floating_clients() or client.tiled(),{}
             for i,cl in ipairs(cltbl) do
                 geomtbl[i] = cl:geometry()
             end

@@ -9,7 +9,7 @@ local module,indicators,cur_c = {},nil,nil
 local values = {"top"     , "top_right"  , "right" ,  "bottom_right" ,
                 "bottom"  , "bottom_left", "left"  ,  "top_left"     }
 
-module.create_arrow = function(width, height,margin,bg_color,fg_color)
+local function create_arrow(width, height,margin,bg_color,fg_color)
     local img = cairo.ImageSurface(cairo.Format.ARGB32, width+2*margin, height+2*margin)
     local cr = cairo.Context(img)
     cr:set_source(color(bg_color))
@@ -37,8 +37,8 @@ end
 
 local function create_indicators()
   indicators           = {}
-  local arr            = module.create_arrow( 20, 20, 10, beautiful.bg_alternate,beautiful.fg_normal )
-  local arr_focus      = module.create_arrow( 20, 20, 10, beautiful.fg_normal,beautiful.bg_normal    )
+  local arr            = create_arrow( 20, 20, 10, beautiful.bg_alternate,beautiful.fg_normal )
+  local arr_focus      = create_arrow( 20, 20, 10, beautiful.fg_normal,beautiful.bg_normal    )
   local angle          = 0
   local shape_bounding = gen_shape_bounding(40)
   for k,v in ipairs(values) do
@@ -80,6 +80,31 @@ local placement_f = {
   bottom       = function(g) return {x = g.x + g.width/2 , y = g.y+g.height     } end,
 }
 
+local resize_f = {
+  right = function(c,delta) return {width=c:geometry().width+100} end,
+  left  = function(c,delta) return {width=c:geometry().width-100} end,
+  up    = function(c,delta) return {width=c:geometry().height-100} end,
+  down  = function(c,delta) return {width=c:geometry().height+100} end
+}
+
+local resize_f_alt = {
+  right = function(c,delta) return {width=c:geometry().width+100} end,
+  left  = function(c,delta) return {width=c:geometry().width-100} end,
+  up    = function(c,delta) return {width=c:geometry().height-100} end,
+  down  = function(c,delta) return {width=c:geometry().height+100} end
+}
+
+local r_orientation = { right = "width", left  = "width", up    = "height", down  = "height" }
+local r_direction   = { right = "x", left  = "x", up    = "y", down  = "y" }
+local r_sign = { right = 1, left  = -1, up    = -1, down  = 1 }
+
+function module.hide()
+  for k,v in ipairs(values) do indicators[v].visible = false end
+    cur_c:disconnect_signal("property::geometry", module.display)
+    cur_c = nil
+    return
+end
+
 function module.display(c,toggle)
   local c = c or capi.client.focus
   if not indicators then
@@ -92,10 +117,7 @@ function module.display(c,toggle)
     c:connect_signal("property::geometry", module.display)
     cur_c = c
   elseif toggle == true then
-    for k,v in ipairs(values) do indicators[v].visible = false end
-    cur_c:disconnect_signal("property::geometry", module.display)
-    cur_c = nil
-    return
+    module.hide()
   end
   for k,v in ipairs(values) do
     local w,pos   = indicators[v],placement_f[v](c:geometry())
@@ -103,5 +125,17 @@ function module.display(c,toggle)
   end
 end
 
-return setmetatable(module, { __call = function(_, ...) return new(...) end })
+function module.resize(mod,key,event,direction,is_swap,is_max)
+  if resize_f[direction] then
+    local new_geo = capi.client.focus:geometry()
+    new_geo[r_orientation[direction]]  = new_geo[r_orientation[direction]] + r_sign[direction]*100*(is_swap and -1 or 1)
+    if is_swap then
+      new_geo[r_direction[direction]]    = new_geo[r_direction[direction]]   + r_sign[direction]*100
+    end
+    capi.client.focus:geometry(new_geo)
+    return true
+  end
+end
+
+return module
 -- kate: space-indent on; indent-width 2; replace-tabs on;
