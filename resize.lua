@@ -69,6 +69,7 @@ local function create_indicators()
   end
 end
 
+-- Resize using the mouse
 local placement_f = {
   left         = function(g) return {x = g.x             , y = g.y + g.height/2 } end,
   top_left     = function(g) return {x = g.x             , y = g.y              } end,
@@ -80,23 +81,22 @@ local placement_f = {
   bottom       = function(g) return {x = g.x + g.width/2 , y = g.y+g.height     } end,
 }
 
-local resize_f = {
-  right = function(c,delta) return {width=c:geometry().width+100} end,
-  left  = function(c,delta) return {width=c:geometry().width-100} end,
-  up    = function(c,delta) return {width=c:geometry().height-100} end,
-  down  = function(c,delta) return {width=c:geometry().height+100} end
-}
-
-local resize_f_alt = {
-  right = function(c,delta) return {width=c:geometry().width+100} end,
-  left  = function(c,delta) return {width=c:geometry().width-100} end,
-  up    = function(c,delta) return {width=c:geometry().height-100} end,
-  down  = function(c,delta) return {width=c:geometry().height+100} end
-}
-
+-- Resize floating using the keyboard
 local r_orientation = { right = "width", left  = "width", up    = "height", down  = "height" }
-local r_direction   = { right = "x", left  = "x", up    = "y", down  = "y" }
-local r_sign = { right = 1, left  = -1, up    = -1, down  = 1 }
+local r_direction   = { right = "x"    , left  = "x"    , up    = "y"     , down  = "y"      }
+local r_sign        = { right = 1      , left  = -1     , up    = -1      , down  = 1        }
+
+-- Resize tiled using the keyboard
+local layouts_all = {
+  [awful.layout.suit.floating]    = { right = "" },
+  [awful.layout.suit.tile]        = { right = {mwfact= 0.05}, left = {mwfact=-0.05}, up ={wfact=-0.1  }, down = {wfact = 0.1 } },
+  [awful.layout.suit.tile.left]   = { right = {mwfact=-0.05}, left = {mwfact= 0.05}, up ={wfact= 0.1  }, down = {wfact =-0.1 } },
+  [awful.layout.suit.tile.bottom] = { right = {wfact=-0.1  }, left = {wfact= 0.1  }, up ={mwfact=-0.05}, down = {mwfact= 0.05} },
+  [awful.layout.suit.tile.top]    = { right = {wfact=-0.1  }, left = {wfact= 0.1  }, up ={mwfact= 0.05}, down = {mwfact=-0.05} },
+  [awful.layout.suit.spiral]      = { right = {wfact=-0.1  }, left = {wfact= 0.1  }, up ={mwfact= 0.05}, down = {mwfact=-0.05} },
+  [awful.layout.suit.magnifier]   = { right = {mwfact= 0.05}, left = {mwfact=-0.05}, up ={mwfact= 0.05}, down = {mwfact=-0.05} },
+  -- The other layouts cannot be resized using variables
+}
 
 function module.hide()
   for k,v in ipairs(values) do indicators[v].visible = false end
@@ -126,15 +126,26 @@ function module.display(c,toggle)
 end
 
 function module.resize(mod,key,event,direction,is_swap,is_max)
-  if resize_f[direction] then
-    local new_geo = capi.client.focus:geometry()
+  local c = capi.client.focus
+  if not c then return true end
+  local lay = awful.layout.get(c.screen)
+  if awful.client.floating.get(c) or lay == awful.layout.suit.floating then
+    local new_geo = c:geometry()
     new_geo[r_orientation[direction]]  = new_geo[r_orientation[direction]] + r_sign[direction]*100*(is_swap and -1 or 1)
     if is_swap then
-      new_geo[r_direction[direction]]    = new_geo[r_direction[direction]]   + r_sign[direction]*100
+      new_geo[r_direction[direction]]  = new_geo[r_direction[direction]]   + r_sign[direction]*100
     end
-    capi.client.focus:geometry(new_geo)
-    return true
+    c:geometry(new_geo)
+  elseif layouts_all[lay] then
+    local ret = layouts_all[lay][direction]
+    if ret.mwfact then
+      awful.tag.incmwfact(ret.mwfact)
+    end
+    if ret.wfact then
+      awful.client.incwfact(ret.wfact,c)
+    end
   end
+  return true
 end
 
 return module

@@ -5,6 +5,7 @@ local setmetatable = setmetatable
 local ipairs       = ipairs
 local util         = require( "awful.util"   )
 local client       = require( "awful.client" )
+local alayout      = require( "awful.layout" )
 local screen       = require( "awful.screen" )
 local wibox        = require( "wibox"        )
 local cairo        = require( "lgi"          ).cairo
@@ -86,7 +87,7 @@ local function init()
     wiboxes["center"].shape_bounding = img._native
 end
 
-local function move_wiboxes(cltbl,geomtbl,float,swap,c)
+local function display_wiboxes(cltbl,geomtbl,float,swap,c)
     if not wiboxes then
         init()
     end
@@ -124,11 +125,11 @@ end
 
 local function bydirection(dir, c, swap,max)
     if c then
-        local float = client.floating.get(c)
+        local float = client.floating.get(c) or alayout.get(c.screen) == alayout.suit.floating
         -- Move the client if floating, swaping wont work anyway
         if swap and float then
             c:geometry((max and float_move_max or float_move)(dir,c))
-            move_wiboxes(nil,nil,float,swap,c)
+            display_wiboxes(nil,nil,float,swap,c)
         else
             -- Get all clients rectangle
             local cltbl,geomtbl = max and floating_clients() or client.tiled(),{}
@@ -144,7 +145,7 @@ local function bydirection(dir, c, swap,max)
                 else
                     c:swap(cltbl[target])
                 end
-                move_wiboxes(cltbl,geomtbl,float,swap,c)
+                display_wiboxes(cltbl,geomtbl,float,swap,c)
             end
         end
     end
@@ -157,6 +158,14 @@ end
 function module._global_bydirection_key(mod,key,event,direction,is_swap,is_max)
     bydirection(direction,capi.client.focus,is_swap,is_max)
     return true
+end
+
+function module.display(mod,key,event,direction,is_swap,is_max)
+    local cltbl,geomtbl = max and floating_clients() or client.tiled(),{}
+    for i,cl in ipairs(cltbl) do
+        geomtbl[i] = cl:geometry()
+    end
+    display_wiboxes(cltbl,geomtbl,false,is_swap,capi.client.focus)
 end
 
 function module._quit()

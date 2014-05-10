@@ -14,6 +14,12 @@ local event_callback = {
   resize = module._resize.resize
 }
 
+local start_callback = {
+  focus  = module._focus.display,
+  move   = module._focus.display,
+  resize = module._resize.display
+}
+
 local exit_callback = {
   focus  = module._focus._quit,
   move   = module._focus._quit,
@@ -54,6 +60,11 @@ local function start_loop(is_swap,is_max)
       return true
     elseif key == "Control_L" or key == "Control_R" then
       is_max = event == "press"
+      return true
+    elseif key == "Alt_L" or key == "Alt_R" then
+      exit_callback[current_mode]()
+      current_mode = event == "press" and "resize" or "focus"
+      start_callback[current_mode](mod,key,event,k,is_swap,is_max)
       return true
     end
 
