@@ -1,6 +1,7 @@
-local capi = { client = client, mouse     = mouse      ,
+local capi = { root = root, mouse     = mouse      ,
                screen = screen, keygrabber = keygrabber}
-local util         = require( "awful.util"   )
+local util         = require( "awful.util" )
+local awful        = require( "awful"      )
 local module = {
   _focus  = require( "customIndicator.focus" ),
   _resize = require( "customIndicator.resize")
@@ -27,10 +28,10 @@ local exit_callback = {
 }
 
 local keys = {--Normal  Xephyr        G510 alt         G510
-  up    = {"Up"    , "&"        , "XF86AudioPause" , "F15" },
-  down  = {"Down"  , "KP_Enter" , "XF86WebCam"     , "F14" },
-  left  = {"Left"  , "#"        , "Cancel"         , "F13" },
-  right = {"Right" , "\""       , "XF86Paste"      , "F17" }
+  up    = {"Up"    --[[, "&"        , "XF86AudioPause" , "F15"]] },
+  down  = {"Down"  --[[, "KP_Enter" , "XF86WebCam"     , "F14"]] },
+  left  = {"Left"  --[[, "#"        , "Cancel"         , "F13"]] },
+  right = {"Right" --[[, "\""       , "XF86Paste"      , "F17"]] }
 }
 
 local function exit_loop()
@@ -94,5 +95,21 @@ function module.mouse_resize(c)
     
 end
 
-return module
+local function new(k)
+  local k = k or keys
+  local aw = {}
+
+  for k,v in pairs(keys) do
+    for _,key_nane in ipairs(v) do
+      aw[#aw+1] = awful.key({ modkey,                    }, key_nane, function () module.focus (k         ) end)
+      aw[#aw+1] = awful.key({ modkey, "Mod1"             }, key_nane, function () module.resize(k         ) end)
+      aw[#aw+1] = awful.key({ modkey, "Shift"            }, key_nane, function () module.move  (k         ) end)
+      aw[#aw+1] = awful.key({ modkey, "Shift", "Control" }, key_nane, function () module.move  (k,nil,true) end)
+      aw[#aw+1] = awful.key({ modkey,          "Control" }, key_nane, function () module.focus (k,nil,true) end)
+    end
+  end
+  capi.root.keys(awful.util.table.join(capi.root.keys(),unpack(aw)))
+end
+
+return setmetatable(module, { __call = function(_, ...) return new(...) end })
 -- kate: space-indent on; indent-width 2; replace-tabs on;

@@ -6,7 +6,6 @@ local ipairs       = ipairs
 local util         = require( "awful.util"   )
 local client       = require( "awful.client" )
 local alayout      = require( "awful.layout" )
-local screen       = require( "awful.screen" )
 local wibox        = require( "wibox"        )
 local cairo        = require( "lgi"          ).cairo
 local beautiful    = require( "beautiful"    )
@@ -161,11 +160,12 @@ function module._global_bydirection_key(mod,key,event,direction,is_swap,is_max)
 end
 
 function module.display(mod,key,event,direction,is_swap,is_max)
+    local c = capi.client.focus
     local cltbl,geomtbl = max and floating_clients() or client.tiled(),{}
     for i,cl in ipairs(cltbl) do
         geomtbl[i] = cl:geometry()
     end
-    display_wiboxes(cltbl,geomtbl,false,is_swap,capi.client.focus)
+    display_wiboxes(cltbl,geomtbl,client.floating.get(c) or alayout.get(c.screen) == alayout.suit.floating,is_swap,c)
 end
 
 function module._quit()
