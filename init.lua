@@ -1,10 +1,11 @@
-local capi = { root = root, mouse     = mouse      ,
+local capi = { root = root, client     = client      ,
                screen = screen, keygrabber = keygrabber}
 local util         = require( "awful.util" )
 local awful        = require( "awful"      )
 local module = {
   _focus  = require( "customIndicator.focus" ),
-  _resize = require( "customIndicator.resize")
+  _resize = require( "customIndicator.resize"),
+  _max    = require( "customIndicator.max"   ),
 }
 
 local current_mode = "focus"
@@ -75,7 +76,12 @@ end
 
 function module.focus(direction,c,max)
     current_mode = "focus"
-    module._focus.global_bydirection(direction,c,false)
+    local screen = (c or capi.client.focus).screen
+    if awful.layout.get((c or capi.client.focus).screen) == awful.layout.suit.max then
+      module._max.display_clients(screen)
+    else
+      module._focus.global_bydirection(direction,c,false,true)
+    end
     start_loop(false,max)
 end
 

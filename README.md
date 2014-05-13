@@ -48,11 +48,11 @@ Using Collision is easy. You just have to hit the arrow keys (`➡` `⬆` `⬇` 
 with some modifiers keys. The `Shift` key is usually used for grabbing something
 while the `Control` key is used to max out the effect.
 
-| Modifier 1 | Modifier 2 | Modifier 3 | Effect                                                |
-| ---------- | ---------- | ---------- | :---------------------------------------------------: |
-| Mod4       |            |            | Move the focus om the tiled layer                     |
-| Mod4       |            | Control    | Move the focus on the floating layer                  |
-| Mod4       | Shift      |            | Move a client in the tiled or floating layer          |
-| Mod4       | Shift      | Control    | Move a floating client to the far side of that screen |
-| Mod4       | Mod1 (Alt) |            | Resize a client relative to the bottom right corner   |
-| Mod4       | Mod1 (Alt) | Shift      | Resize a client relative to the top left corner       |
+| Modifier 1 | Modifier 2   | Modifier 3 | Effect                                                |
+| :--------: | :----------: | :--------: | ----------------------------------------------------- |
+| `Mod4`     |              |            | Move the focus om the tiled layer                     |
+| `Mod4`     |              | `Control`  | Move the focus on the floating layer                  |
+| `Mod4`     | `Shift`      |            | Move a client in the tiled or floating layer          |
+| `Mod4`     | `Shift`      | `Control`  | Move a floating client to the far side of that screen |
+| `Mod4`     | `Mod1 (Alt)` |            | Resize a client relative to the bottom right corner   |
+| `Mod4`     | `Mod1 (Alt)` | `Shift`    | Resize a client relative to the top left corner       |
