@@ -1,4 +1,4 @@
-Collision window management module for AwesomeWM
+Collision window navigation module for AwesomeWM
 ================================================
 
 This module add some visual indicators for common window management operations.

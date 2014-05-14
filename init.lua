@@ -3,9 +3,9 @@ local capi = { root = root, client     = client      ,
 local util         = require( "awful.util" )
 local awful        = require( "awful"      )
 local module = {
-  _focus  = require( "customIndicator.focus" ),
-  _resize = require( "customIndicator.resize"),
-  _max    = require( "customIndicator.max"   ),
+  _focus  = require( "collision.focus" ),
+  _resize = require( "collision.resize"),
+  _max    = require( "collision.max"   ),
 }
 
 local current_mode = "focus"

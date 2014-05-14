@@ -18,6 +18,16 @@ local function init()
   w.visible = true
 end
 
+local rr,rg,rb
+local function get_rgb()
+  if not rr then
+    local pat = color(beautiful.fg_normal)
+    local s,r,g,b,a = pat:get_rgba()
+    rr,rg,rb = r,g,b
+  end
+  return rr,rg,rb
+end
+
 local function get_round_rect(width,height,bg)
   local img2 = cairo.ImageSurface(cairo.Format.ARGB32, width,height)
   local cr2 = cairo.Context(img2)
@@ -34,6 +44,29 @@ local function get_round_rect(width,height,bg)
   cr2:rectangle(width-rad,rad,rad,height-2*rad)
   cr2:fill()
   return img2
+end
+
+local margin = 15
+local function create_arrow(cr,x,y,width, height,direction)
+  cr:save()
+  cr:translate(x,y)
+  if direction then
+    cr:translate(width,height)
+    cr:rotate(math.pi)
+  end
+  cr:move_to(x,y)
+  local r,g,b = get_rgb()
+  cr:set_source_rgba(r,g,b,0.15)
+  cr:set_antialias(1)
+  cr:rectangle(2*margin,2*(height/7),width/3,3*(height/7))
+  cr:fill()
+  cr:move_to(2*margin+width/3,(height/7))
+  cr:line_to(width-2*margin,height/2)
+  cr:line_to(2*margin+width/3,6*(height/7))
+  cr:line_to(2*margin+width/3,(height/7))
+  cr:close_path()
+  cr:fill()
+  cr:restore()
 end
 
 local pango_l = nil
@@ -57,7 +90,7 @@ local function draw_shape(s)
   end
 
   -- Resize the wibox
-  w.x,w.y,w.width,w.height = geo.x,wa.y+wa.height - 15 - height,geo.width,height
+  w.x,w.y,w.width,w.height = geo.x,wa.y+wa.height - margin - height,geo.width,height
 
   local img = cairo.ImageSurface(cairo.Format.ARGB32, geo.width,geo.height)
   local img3 = cairo.ImageSurface(cairo.Format.ARGB32, geo.width,geo.height)
@@ -79,29 +112,52 @@ local function draw_shape(s)
   end
 
   local nornal,focus = color(beautiful.fg_normal),color(beautiful.bg_urgent)
+  local fk = awful.util.table.hasitem(clients,capi.client.focus)
   for k,v in ipairs(clients) do
     -- Shape bounding
     cr:set_source_surface(img2,dx,0)
     cr:paint()
 
     -- Borders
-    cr3:set_source(v==capi.client.focus and focus or nornal)
+    cr3:set_source(k==fk and focus or nornal)
     cr3:rectangle(dx,0,width,height)
     cr3:fill()
     cr3:set_source_surface(img4,dx+3,3)
     cr3:paint()
 
     -- Print the icon
-    cr:set_source_surface(surface(v.icon),dx,10)
-    cr:paint()
+    local icon = surface(v.icon)
+    cr3:save()
+    local w,h = icon:get_width(),icon:get_height()
+    local aspect,aspect_h = width / w,(height-50) / h
+    if aspect > aspect_h then aspect = aspect_h end
+    cr3:translate(dx+width/2,(height-50)/2)
+    cr3:scale(aspect, aspect)
+    cr3:set_source_surface(icon,-w/2,-h/2)
+    cr3:paint_with_alpha(0.7)
+    cr3:restore()
+
+    -- Print a pretty line
+    local r,g,b = get_rgb()
+    cr3:set_source_rgba(r,g,b,0.7)
+    cr3:set_line_width(1)
+    cr3:move_to(dx+margin,height - 47)
+    cr3:line_to(dx+margin+width-2*margin,height - 47)
+    cr3:stroke()
 
     -- Pring the text
-    cr3:set_source(nornal)
     pango_l.text = v.name
     pango_l.width = pango.units_from_double(width-16)
     pango_l.height = pango.units_from_double(height-40)
-    cr3:move_to(dx+8,40)
+    cr3:move_to(dx+8,height-40)
     cr3:show_layout(pango_l)
+
+    -- Draw an arrow
+    if k == fk-1 then
+      create_arrow(cr3,dx,0,width,height,1)
+    elseif k == fk+1 then
+      create_arrow(cr3,dx,0,width,height,nil)
+    end
 
     dx = dx + width + 20
   end
@@ -124,7 +180,9 @@ end
 
 function module.change_focus(mod,key,event,direction,is_swap,is_max)
   awful.client.focus.byidx(direction == "right" and 1 or -1)
-  draw_shape(capi.client.focus.screen)
+  local c = capi.client.focus
+  c:raise()
+  draw_shape(c.screen)
   return true
 end
 
