@@ -13,19 +13,22 @@ local current_mode = "focus"
 local event_callback = {
   focus  = module._focus._global_bydirection_key,
   move   = module._focus._global_bydirection_key,
-  resize = module._resize.resize
+  resize = module._resize.resize                ,
+  max    = module._max.change_focus             ,
 }
 
 local start_callback = {
   focus  = module._focus.display,
   move   = module._focus.display,
-  resize = module._resize.display
+  resize = module._resize.display,
+  max    = module._max.display_clients,
 }
 
 local exit_callback = {
   focus  = module._focus._quit,
   move   = module._focus._quit,
-  resize = module._resize.hide
+  resize = module._resize.hide,
+  max    = module._max.hide
 }
 
 local keys = {--Normal  Xephyr        G510 alt         G510
@@ -75,12 +78,13 @@ local function start_loop(is_swap,is_max)
 end
 
 function module.focus(direction,c,max)
-    current_mode = "focus"
     local screen = (c or capi.client.focus).screen
     if awful.layout.get((c or capi.client.focus).screen) == awful.layout.suit.max then
+      current_mode = "max"
       module._max.display_clients(screen)
     else
-      module._focus.global_bydirection(direction,c,false,true)
+      current_mode = "focus"
+      module._focus.global_bydirection(direction,c,false,max)
     end
     start_loop(false,max)
 end

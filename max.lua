@@ -40,15 +40,24 @@ local pango_l = nil
 local function draw_shape(s)
   local clients = awful.client.tiled(s)
   local geo = capi.screen[s].geometry
+  local wa  =capi.screen[s].workarea
 
   --Compute thumb dimensions
   local margins = 2*20 + (#clients-1)*20
   local width = (geo.width - margins) / #clients
   local ratio = geo.height/geo.width
   local height = width*ratio
+  local dx = 20
+
+  -- Do not let the thumb get too big
+  if height > 150 then
+    height = 150
+    width = 150 * (1.0/ratio)
+    dx = (wa.width-margins-(#clients*width))/2 + 20
+  end
 
   -- Resize the wibox
-  w.x,w.y,w.width,w.height = geo.x,geo.y+3*(geo.height/4),geo.width,height
+  w.x,w.y,w.width,w.height = geo.x,wa.y+wa.height - 15 - height,geo.width,height
 
   local img = cairo.ImageSurface(cairo.Format.ARGB32, geo.width,geo.height)
   local img3 = cairo.ImageSurface(cairo.Format.ARGB32, geo.width,geo.height)
@@ -57,15 +66,16 @@ local function draw_shape(s)
   cr:set_source_rgba(0,0,0,0)
   cr:paint()
 
-  local dx = 20
-  local white,bg = color("#FFFFFF"),color(beautiful.bg_normal)
+  local white,bg = color("#FFFFFF"),color(beautiful.menu_bg_normal or beautiful.bg_normal)
   local img2 = get_round_rect(width,height,white)
   local img4 = get_round_rect(width-6,height-6,bg)
 
   if not pango_l then
     local pango_crx = pangocairo.font_map_get_default():create_context()
     pango_l = pango.Layout.new(pango_crx)
---     pango_l:set_alignment("CENTER")
+    pango_l:set_font_description(beautiful.get_font(font))
+    pango_l:set_alignment("CENTER")
+    pango_l:set_wrap("CHAR")
   end
 
   local nornal,focus = color(beautiful.fg_normal),color(beautiful.bg_urgent)
@@ -88,8 +98,8 @@ local function draw_shape(s)
     -- Pring the text
     cr3:set_source(nornal)
     pango_l.text = v.name
-    pango_l:set_width(width-16)
-    pango_l:set_height(height-40)
+    pango_l.width = pango.units_from_double(width-16)
+    pango_l.height = pango.units_from_double(height-40)
     cr3:move_to(dx+8,40)
     cr3:show_layout(pango_l)
 
@@ -98,6 +108,7 @@ local function draw_shape(s)
 
   w:set_bg(cairo.Pattern.create_for_surface(img3))
   w.shape_bounding = img._native
+  w.visible = true
 end
 
 function module.display_clients(s)
@@ -105,6 +116,16 @@ function module.display_clients(s)
     init()
   end
   draw_shape(s)
+end
+
+function module.hide()
+  w.visible = false
+end
+
+function module.change_focus(mod,key,event,direction,is_swap,is_max)
+  awful.client.focus.byidx(direction == "right" and 1 or -1)
+  draw_shape(capi.client.focus.screen)
+  return true
 end
 
 return module
