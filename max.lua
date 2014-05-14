@@ -70,14 +70,13 @@ local function create_arrow(cr,x,y,width, height,direction)
 end
 
 local pango_l = nil
-local function draw_shape(s)
-  local clients = awful.client.tiled(s)
+local function draw_shape(s,collection,current_idx,icon_f,y)
   local geo = capi.screen[s].geometry
   local wa  =capi.screen[s].workarea
 
   --Compute thumb dimensions
-  local margins = 2*20 + (#clients-1)*20
-  local width = (geo.width - margins) / #clients
+  local margins = 2*20 + (#collection-1)*20
+  local width = (geo.width - margins) / #collection
   local ratio = geo.height/geo.width
   local height = width*ratio
   local dx = 20
@@ -86,11 +85,11 @@ local function draw_shape(s)
   if height > 150 then
     height = 150
     width = 150 * (1.0/ratio)
-    dx = (wa.width-margins-(#clients*width))/2 + 20
+    dx = (wa.width-margins-(#collection*width))/2 + 20
   end
 
   -- Resize the wibox
-  w.x,w.y,w.width,w.height = geo.x,wa.y+wa.height - margin - height,geo.width,height
+  w.x,w.y,w.width,w.height = geo.x,y or (wa.y+wa.height) - margin - height,geo.width,height
 
   local img = cairo.ImageSurface(cairo.Format.ARGB32, geo.width,geo.height)
   local img3 = cairo.ImageSurface(cairo.Format.ARGB32, geo.width,geo.height)
@@ -112,30 +111,31 @@ local function draw_shape(s)
   end
 
   local nornal,focus = color(beautiful.fg_normal),color(beautiful.bg_urgent)
-  local fk = awful.util.table.hasitem(clients,capi.client.focus)
-  for k,v in ipairs(clients) do
+  for k,v in ipairs(collection) do
     -- Shape bounding
     cr:set_source_surface(img2,dx,0)
     cr:paint()
 
     -- Borders
-    cr3:set_source(k==fk and focus or nornal)
+    cr3:set_source(k==current_idx and focus or nornal)
     cr3:rectangle(dx,0,width,height)
     cr3:fill()
     cr3:set_source_surface(img4,dx+3,3)
     cr3:paint()
 
     -- Print the icon
-    local icon = surface(v.icon)
-    cr3:save()
-    local w,h = icon:get_width(),icon:get_height()
-    local aspect,aspect_h = width / w,(height-50) / h
-    if aspect > aspect_h then aspect = aspect_h end
-    cr3:translate(dx+width/2,(height-50)/2)
-    cr3:scale(aspect, aspect)
-    cr3:set_source_surface(icon,-w/2,-h/2)
-    cr3:paint_with_alpha(0.7)
-    cr3:restore()
+    local icon = icon_f(v)
+    if icon then
+      cr3:save()
+      local w,h = icon:get_width(),icon:get_height()
+      local aspect,aspect_h = width / w,(height-50) / h
+      if aspect > aspect_h then aspect = aspect_h end
+      cr3:translate(dx+width/2,(height-50)/2)
+      cr3:scale(aspect, aspect)
+      cr3:set_source_surface(icon,-w/2,-h/2)
+      cr3:paint_with_alpha(0.7)
+      cr3:restore()
+    end
 
     -- Print a pretty line
     local r,g,b = get_rgb()
@@ -153,9 +153,9 @@ local function draw_shape(s)
     cr3:show_layout(pango_l)
 
     -- Draw an arrow
-    if k == fk-1 then
+    if k == current_idx-1 then
       create_arrow(cr3,dx,0,width,height,1)
-    elseif k == fk+1 then
+    elseif k == current_idx+1 then
       create_arrow(cr3,dx,0,width,height,nil)
     end
 
@@ -167,22 +167,56 @@ local function draw_shape(s)
   w.visible = true
 end
 
+function module.hide()
+  w.visible = false
+end
+
+--Client related
+local function client_icon(c)
+  return surface(c.icon)
+end
+
 function module.display_clients(s)
   if not w then
     init()
   end
-  draw_shape(s)
-end
-
-function module.hide()
-  w.visible = false
+  local clients = awful.client.tiled(s)
+  local fk = awful.util.table.hasitem(clients,capi.client.focus)
+  draw_shape(s,clients,fk,client_icon)
 end
 
 function module.change_focus(mod,key,event,direction,is_swap,is_max)
   awful.client.focus.byidx(direction == "right" and 1 or -1)
   local c = capi.client.focus
   c:raise()
-  draw_shape(c.screen)
+  local clients = awful.client.tiled(s)
+  local fk = awful.util.table.hasitem(clients,c)
+  draw_shape(c.screen,clients,fk,client_icon)
+  return true
+end
+
+--Tag related
+local function tag_icon(t)
+  return surface(awful.tag.geticon(t))
+end
+
+local tmp_screen = nil
+function module.display_tags(s)
+  if not w then
+    init()
+  end
+  tmp_screen = s
+  local tags = awful.tag.gettags(s)
+  local fk = awful.util.table.hasitem(tags,awful.tag.selected(s))
+  draw_shape(s,tags,fk,tag_icon,capi.screen[s].workarea.y + 15)
+end
+
+function module.change_tag(mod,key,event,direction,is_swap,is_max)
+  local s = tmp_screen or capi.client.focus.screen
+  awful.tag[direction == "left" and "viewprev" or "viewnext"](s)
+  local tags = awful.tag.gettags(s)
+  local fk = awful.util.table.hasitem(tags,awful.tag.selected(s))
+  draw_shape(s,tags,fk,tag_icon,capi.screen[s].workarea.y + 15)
   return true
 end
 

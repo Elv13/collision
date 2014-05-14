@@ -15,6 +15,7 @@ local event_callback = {
   move   = module._focus._global_bydirection_key,
   resize = module._resize.resize                ,
   max    = module._max.change_focus             ,
+  tag    = module._max.change_tag               ,
 }
 
 local start_callback = {
@@ -22,13 +23,15 @@ local start_callback = {
   move   = module._focus.display,
   resize = module._resize.display,
   max    = module._max.display_clients,
+  tag    = module._max.display_tags,
 }
 
 local exit_callback = {
   focus  = module._focus._quit,
   move   = module._focus._quit,
   resize = module._resize.hide,
-  max    = module._max.hide
+  max    = module._max.hide,
+  tag    = module._max.hide,
 }
 
 local keys = {--Normal  Xephyr        G510 alt         G510
@@ -56,21 +59,21 @@ local function start_loop(is_swap,is_max)
           end
           return
         end
-        return true
+        return #mod > 0
       end
     end
 
     if key == "Shift_L" or key == "Shift_R" then
       is_swap = event == "press"
-      return true
+      return #mod > 0
     elseif key == "Control_L" or key == "Control_R" then
       is_max = event == "press"
-      return true
+      return #mod > 0
     elseif key == "Alt_L" or key == "Alt_R" then
       exit_callback[current_mode]()
       current_mode = event == "press" and "resize" or "focus"
       start_callback[current_mode](mod,key,event,k,is_swap,is_max)
-      return true
+      return #mod > 0
     end
 
     return exit_loop()
@@ -78,31 +81,38 @@ local function start_loop(is_swap,is_max)
 end
 
 function module.focus(direction,c,max)
-    local screen = (c or capi.client.focus).screen
-    if awful.layout.get((c or capi.client.focus).screen) == awful.layout.suit.max then
-      current_mode = "max"
-      module._max.display_clients(screen)
-    else
-      current_mode = "focus"
-      module._focus.global_bydirection(direction,c,false,max)
-    end
-    start_loop(false,max)
+  local screen = (c or capi.client.focus).screen
+  if awful.layout.get((c or capi.client.focus).screen) == awful.layout.suit.max then
+    current_mode = "max"
+    module._max.display_clients(screen)
+  else
+    current_mode = "focus"
+    module._focus.global_bydirection(direction,c,false,max)
+  end
+  start_loop(false,max)
 end
 
 function module.move(direction,c,max)
-    current_mode = "move"
-    module._focus.global_bydirection(direction,c,true)
-    start_loop(true,max)
+  current_mode = "move"
+  module._focus.global_bydirection(direction,c,true)
+  start_loop(true,max)
 end
 
 function module.resize(direction,c,max)
-    current_mode = "resize"
-    start_loop(false,max)
-    module._resize.display(c)
+  current_mode = "resize"
+  start_loop(false,max)
+  module._resize.display(c)
 end
 
+function module.tag(direction,c,max)
+  current_mode = "tag"
+  module._max.display_tags((c or capi.client.focus).screen)
+  start_loop(false,max)
+end
+
+
 function module.mouse_resize(c)
-    
+  
 end
 
 local function new(k)
@@ -116,6 +126,7 @@ local function new(k)
       aw[#aw+1] = awful.key({ modkey, "Shift"            }, key_nane, function () module.move  (k         ) end)
       aw[#aw+1] = awful.key({ modkey, "Shift", "Control" }, key_nane, function () module.move  (k,nil,true) end)
       aw[#aw+1] = awful.key({ modkey,          "Control" }, key_nane, function () module.focus (k,nil,true) end)
+      aw[#aw+1] = awful.key({ "Mod1",          "Control" }, key_nane, function () module.tag   (k,nil,true) end)
     end
   end
   capi.root.keys(awful.util.table.join(capi.root.keys(),unpack(aw)))

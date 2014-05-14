@@ -8,6 +8,7 @@ be printed on the screen. Collision has 3 modes:
 * **Focus**: Move the focus from client to client
 * **Move**: Move a client
 * **Resize**: Change a client dimensions
+* **Tag**: Move to the previous/next tag
 
 # Installation
 
@@ -35,9 +36,9 @@ something else:
     awful.key({ modkey,           }, "Left",   awful.tag.viewprev       ),
     awful.key({ modkey,           }, "Right",  awful.tag.viewnext       ),
 
-    --To (re-use Unity/Compiz old shortcuts for desktop navigation)
-    awful.key({ "Mod1", "Control" }, "Left",   awful.tag.viewprev       ),
-    awful.key({ "Mod1", "Control" }, "Right",  awful.tag.viewnext       ),
+    --To:
+    --awful.key({ modkey,           }, "Left",   awful.tag.viewprev       ),
+    --awful.key({ modkey,           }, "Right",  awful.tag.viewnext       ),
 ```
 
 Your done!
@@ -56,3 +57,4 @@ while the `Control` key is used to max out the effect.
 | `Mod4`     | `Shift`      | `Control`  | Move a floating client to the far side of that screen |
 | `Mod4`     | `Mod1 (Alt)` |            | Resize a client relative to the bottom right corner   |
 | `Mod4`     | `Mod1 (Alt)` | `Shift`    | Resize a client relative to the top left corner       |
+| `Control`  | `Mod1 (Alt)` |            | Move to the next/previous tag
