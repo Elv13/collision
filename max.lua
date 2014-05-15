@@ -176,9 +176,13 @@ local function client_icon(c)
   return surface(c.icon)
 end
 
-function module.display_clients(s)
+function module.display_clients(s,direction)
   if not w then
     init()
+  end
+  if direction then
+    awful.client.focus.byidx(direction == "right" and 1 or -1)
+    capi.client.focus:raise()
   end
   local clients = awful.client.tiled(s)
   local fk = awful.util.table.hasitem(clients,capi.client.focus)
@@ -188,10 +192,11 @@ end
 function module.change_focus(mod,key,event,direction,is_swap,is_max)
   awful.client.focus.byidx(direction == "right" and 1 or -1)
   local c = capi.client.focus
+  local s = c.screen
   c:raise()
   local clients = awful.client.tiled(s)
   local fk = awful.util.table.hasitem(clients,c)
-  draw_shape(c.screen,clients,fk,client_icon)
+  draw_shape(s,clients,fk,client_icon)
   return true
 end
 
@@ -201,11 +206,14 @@ local function tag_icon(t)
 end
 
 local tmp_screen = nil
-function module.display_tags(s)
+function module.display_tags(s,direction)
   if not w then
     init()
   end
   tmp_screen = s
+  if direction then
+    awful.tag[direction == "left" and "viewprev" or "viewnext"](s)
+  end
   local tags = awful.tag.gettags(s)
   local fk = awful.util.table.hasitem(tags,awful.tag.selected(s))
   draw_shape(s,tags,fk,tag_icon,capi.screen[s].workarea.y + 15)

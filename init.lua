@@ -1,4 +1,4 @@
-local capi = { root = root, client     = client      ,
+local capi = {root=root,client=client,mouse=mouse,
                screen = screen, keygrabber = keygrabber}
 local util         = require( "awful.util" )
 local awful        = require( "awful"      )
@@ -19,26 +19,26 @@ local event_callback = {
 }
 
 local start_callback = {
-  focus  = module._focus.display,
-  move   = module._focus.display,
-  resize = module._resize.display,
+  focus  = module._focus.display      ,
+  move   = module._focus.display      ,
+  resize = module._resize.display     ,
   max    = module._max.display_clients,
-  tag    = module._max.display_tags,
+  tag    = module._max.display_tags   ,
 }
 
 local exit_callback = {
-  focus  = module._focus._quit,
-  move   = module._focus._quit,
-  resize = module._resize.hide,
-  max    = module._max.hide,
-  tag    = module._max.hide,
+  focus  = module._focus._quit ,
+  move   = module._focus._quit ,
+  resize = module._resize.hide ,
+  max    = module._max.hide    ,
+  tag    = module._max.hide    ,
 }
 
 local keys = {--Normal  Xephyr        G510 alt         G510
   up    = {"Up"    --[[, "&"        , "XF86AudioPause" , "F15"]] },
   down  = {"Down"  --[[, "KP_Enter" , "XF86WebCam"     , "F14"]] },
   left  = {"Left"  --[[, "#"        , "Cancel"         , "F13"]] },
-  right = {"Right" --[[, "\""       , "XF86Paste"      , "F17"]] }
+  right = {"Right" --[[, "\""       , "XF86Paste"      , "F17"]] },
 }
 
 local function exit_loop()
@@ -68,12 +68,12 @@ local function start_loop(is_swap,is_max)
       return #mod > 0
     elseif key == "Control_L" or key == "Control_R" then
       is_max = event == "press"
-      return #mod > 0
+      return #mod > 0 and awful.util.table.hasitem(mod,"Mod4") or exit_loop()
     elseif key == "Alt_L" or key == "Alt_R" then
       exit_callback[current_mode]()
       current_mode = event == "press" and "resize" or "focus"
       start_callback[current_mode](mod,key,event,k,is_swap,is_max)
-      return #mod > 0
+      return #mod > 0 and awful.util.table.hasitem(mod,"Mod4") or exit_loop()
     end
 
     return exit_loop()
@@ -84,7 +84,7 @@ function module.focus(direction,c,max)
   local screen = (c or capi.client.focus).screen
   if awful.layout.get((c or capi.client.focus).screen) == awful.layout.suit.max then
     current_mode = "max"
-    module._max.display_clients(screen)
+    module._max.display_clients(screen,direction)
   else
     current_mode = "focus"
     module._focus.global_bydirection(direction,c,false,max)
@@ -106,7 +106,8 @@ end
 
 function module.tag(direction,c,max)
   current_mode = "tag"
-  module._max.display_tags((c or capi.client.focus).screen)
+  local c = c or capi.client.focus
+  module._max.display_tags((c) and c.screen or capi.mouse.screen,direction)
   start_loop(false,max)
 end
 
