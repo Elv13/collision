@@ -1,10 +1,9 @@
-local capi = { client = client, mouse     = mouse      ,
-               screen = screen, keygrabber = keygrabber}
+local capi = { client = client, mouse=mouse,mousegrabber=mousegrabber }
 local ipairs,print    = ipairs,print
 local wibox,color     = require( "wibox" )    , require( "gears.color" )
 local cairo,beautiful = require( "lgi").cairo , require( "beautiful"   )
 local awful           = require("awful")
-local module,indicators,cur_c = {},nil,nil
+local module,indicators,cur_c,auto_hide = {},nil,nil
 
 local values = {"top"     , "top_right"  , "right" ,  "bottom_right" ,
                 "bottom"  , "bottom_left", "left"  ,  "top_left"     }
@@ -59,7 +58,13 @@ local function create_indicators()
     w.shape_bounding = shape_bounding
     w:set_bg(beautiful.bg_alternate)
     w:connect_signal("mouse::enter",function() ib:set_image(arr_rot_focus) end)
-    w:connect_signal("mouse::leave",function() ib:set_image(arr_rot)       end)
+    w:connect_signal("mouse::leave",function()
+      ib:set_image(arr_rot)
+      if auto_hide then
+        module.hide()
+        auto_hide = false
+      end
+    end)
     ib:buttons( awful.util.table.join(
       awful.button({ }, 1, function(geometry)
         ib:set_image(arr_rot)
@@ -147,6 +152,29 @@ function module.resize(mod,key,event,direction,is_swap,is_max)
   end
   return true
 end
+
+-- Resize from the top left corner
+function module.mouse_resize(c,btn)
+  module.display(c)
+  local geom,curX,curY = c:geometry(),capi.mouse.coords().x,capi.mouse.coords().y
+  capi.mousegrabber.run(function(mouse)
+    if mouse.buttons[1] == false then
+      module.hide()
+      return false
+    elseif mouse.x ~= curX and mouse.y ~= curY then
+        c:geometry({x=geom.x+(mouse.x-curX),y=geom.y+(mouse.y-curY),width=geom.width-(mouse.x-curX),height=geom.height-(mouse.y-curY)})
+    end
+    return true
+  end,"fleur")
+end
+
+-- awful.mouse.client._resize = awful.mouse.client.resize
+-- awful.mouse.client.resize = function(c,...)
+--   module.display(c)
+--   auto_hide = true
+--   awful.mouse.client._resize(c,...)
+--   module.hide()
+-- end
 
 return module
 -- kate: space-indent on; indent-width 2; replace-tabs on;

@@ -139,7 +139,7 @@ local function bydirection(dir, c, swap,max)
       -- If we found a client to focus, then do it.
       if target then
         if swap ~= true then
-          capi.client.focus = cltbl[target]
+          capi.client.focus = cltbl[((not cltbl[target] and #cltbl == 1) and 1 or target)]
           capi.client.focus:raise()
         else
           c:swap(cltbl[target])

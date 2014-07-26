@@ -82,7 +82,8 @@ end
 
 function module.focus(direction,c,max)
   local screen = (c or capi.client.focus).screen
-  if awful.layout.get((c or capi.client.focus).screen) == awful.layout.suit.max then
+  -- Useless when there is only 1 client tiled, incompatible with the "max_out" mode (in this case, focus floating mode)
+  if awful.layout.get(screen) == awful.layout.suit.max and #awful.client.tiled(screen) > 1 and not max then
     current_mode = "max"
     module._max.display_clients(screen,direction)
   else
@@ -111,11 +112,6 @@ function module.tag(direction,c,max)
   start_loop(false,max)
 end
 
-
-function module.mouse_resize(c)
-  
-end
-
 local function new(k)
   local k = k or keys
   local aw = {}
@@ -127,7 +123,9 @@ local function new(k)
       aw[#aw+1] = awful.key({ modkey, "Shift"            }, key_nane, function () module.move  (k         ) end)
       aw[#aw+1] = awful.key({ modkey, "Shift", "Control" }, key_nane, function () module.move  (k,nil,true) end)
       aw[#aw+1] = awful.key({ modkey,          "Control" }, key_nane, function () module.focus (k,nil,true) end)
-      aw[#aw+1] = awful.key({ "Mod1",          "Control" }, key_nane, function () module.tag   (k,nil,true) end)
+      if k == "left" or k =="right" then -- Conflict with my text editor, so I say no
+        aw[#aw+1] = awful.key({ "Mod1",        "Control" }, key_nane, function () module.tag   (k,nil,true) end)
+      end
     end
   end
   capi.root.keys(awful.util.table.join(capi.root.keys(),unpack(aw)))
