@@ -17,7 +17,7 @@ First, clone the repository
 ```lua
     mkdir -p ~/.config/awesome
     cd ~/.config/awesome
-    git clone https://github.com/Elv13/Collision
+    git clone https://github.com/Elv13/collision
 ```
 
 Now, open ~/.config/awesome/rc.lua (or copy /etc/xdg/awesome/rc.lua to 
