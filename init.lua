@@ -119,11 +119,11 @@ local function new(k)
 
   for k,v in pairs(keys) do
     for _,key_nane in ipairs(v) do
-      aw[#aw+1] = awful.key({ modkey,                    }, key_nane, function () module.focus (k         ) end)
-      aw[#aw+1] = awful.key({ modkey, "Mod1"             }, key_nane, function () module.resize(k         ) end)
-      aw[#aw+1] = awful.key({ modkey, "Shift"            }, key_nane, function () module.move  (k         ) end)
-      aw[#aw+1] = awful.key({ modkey, "Shift", "Control" }, key_nane, function () module.move  (k,nil,true) end)
-      aw[#aw+1] = awful.key({ modkey,          "Control" }, key_nane, function () module.focus (k,nil,true) end)
+      aw[#aw+1] = awful.key({ "Mod4",                    }, key_nane, function () module.focus (k         ) end)
+      aw[#aw+1] = awful.key({ "Mod4", "Mod1"             }, key_nane, function () module.resize(k         ) end)
+      aw[#aw+1] = awful.key({ "Mod4", "Shift"            }, key_nane, function () module.move  (k         ) end)
+      aw[#aw+1] = awful.key({ "Mod4", "Shift", "Control" }, key_nane, function () module.move  (k,nil,true) end)
+      aw[#aw+1] = awful.key({ "Mod4",          "Control" }, key_nane, function () module.focus (k,nil,true) end)
       if k == "left" or k =="right" then -- Conflict with my text editor, so I say no
         aw[#aw+1] = awful.key({ "Mod1",        "Control" }, key_nane, function () module.tag   (k,nil,true) end)
       end
