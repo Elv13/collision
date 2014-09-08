@@ -113,7 +113,8 @@ function module.tag(direction,c,max)
 end
 
 local function new(k)
-  local k = k or keys
+  -- Replace the keys array. The new one has to have a valid mapping
+  keys = k or keys
   local aw = {}
 
   for k,v in pairs(keys) do

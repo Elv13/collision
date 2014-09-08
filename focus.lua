@@ -142,7 +142,8 @@ local function bydirection(dir, c, swap,max)
           capi.client.focus = cltbl[((not cltbl[target] and #cltbl == 1) and 1 or target)]
           capi.client.focus:raise()
         else
-          c:swap(cltbl[target])
+          --BUG swap doesn't work if the screen is not the same
+          c:swap(cltbl[((not cltbl[target] and #cltbl == 1) and 1 or target)])
         end
         display_wiboxes(cltbl,geomtbl,float,swap,c)
       end

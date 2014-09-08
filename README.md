@@ -58,3 +58,31 @@ while the `Control` key is used to max out the effect.
 | `Mod4`     | `Mod1 (Alt)` |            | Resize a client relative to the bottom right corner   |
 | `Mod4`     | `Mod1 (Alt)` | `Shift`    | Resize a client relative to the top left corner       |
 | `Control`  | `Mod1 (Alt)` |            | Move to the next/previous tag
+
+# Using different keys
+
+Due to the large ammount of keyboard shortcut Collision create, they are
+auto-generated automatically. While this make installation simpler, it also
+make Collision somewhat hard-coded magic. Some alternative keymaps can also
+be ackward to use because of the reliance on mod keys such as `Alt` and `Control`.
+
+That being said, Collision allow some basic remapping. Instead of:
+
+```lua
+    require("collision")()
+```
+
+This can be used:
+
+```lua
+    require("collision") {
+        --        Normal    Xephyr       Vim      G510
+        up    = { "Up"    , "&"        , "k"   , "F15" },
+        down  = { "Down"  , "KP_Enter" , "j"   , "F14" },
+        left  = { "Left"  , "#"        , "h"   , "F13" },
+        right = { "Right" , "\""       , "l"   , "F17" },
+    }
+```
+
+Of course, if the `Vim` keys are used, any other shortcut binded to them have to
+be removed from rc.lua.
