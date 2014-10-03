@@ -57,7 +57,7 @@ while the `Control` key is used to max out the effect.
 | `Mod4`     | `Shift`      | `Control`  | Move a floating client to the far side of that screen |
 | `Mod4`     | `Mod1 (Alt)` |            | Resize a client relative to the bottom right corner   |
 | `Mod4`     | `Mod1 (Alt)` | `Shift`    | Resize a client relative to the top left corner       |
-| `Control`  | `Mod1 (Alt)` |            | Move to the next/previous tag
+| `Control`  | `Mod1 (Alt)` |            | Move to the next/previous tag                         |
 
 # Using different keys
 

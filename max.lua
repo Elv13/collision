@@ -124,15 +124,11 @@ local function draw_shape(s,collection,current_idx,icon_f,y)
     cr3:paint()
 
     -- Print the icon
-    local icon = icon_f(v)
+    local icon = icon_f(v,width-20,height-20-50)
     if icon then
       cr3:save()
-      local w,h = icon:get_width(),icon:get_height()
-      local aspect,aspect_h = width / w,(height-50) / h
-      if aspect > aspect_h then aspect = aspect_h end
-      cr3:translate(dx+width/2,(height-50)/2)
-      cr3:scale(aspect, aspect)
-      cr3:set_source_surface(icon,-w/2,-h/2)
+      cr3:translate(dx+10,10)
+      cr3:set_source_surface(icon)
       cr3:paint_with_alpha(0.7)
       cr3:restore()
     end
@@ -172,8 +168,56 @@ function module.hide()
 end
 
 --Client related
-local function client_icon(c)
-  return surface(c.icon)
+local function client_icon(c,width,height)
+  -- Get the content
+  --TODO detect pure black frames
+  local img = cairo.ImageSurface(cairo.Format.ARGB32, width, height)
+  local cr = cairo.Context(img)
+
+  local geom = c:geometry()
+  local scale = width/geom.width
+  if geom.height*scale > height then
+    scale = height/geom.height
+  end
+  local w,h = geom.width*scale,geom.height*scale
+
+  -- Create a mask
+  cr:save()
+  cr:translate((width-w)/2,(height-h)/2)
+  cr:arc(10,10,10,0,math.pi*2)
+  cr:fill()
+  cr:arc(w-10,10,10,0,math.pi*2)
+  cr:fill()
+  cr:arc(w-10,h-10,10,0,math.pi*2)
+  cr:fill()
+  cr:arc(10,h-10,10,0,math.pi*2)
+  cr:fill()
+  cr:rectangle(10,0,w-20,h)
+  cr:rectangle(0,10,w,h-20)
+  cr:fill()
+
+  -- Create a matrix to scale down the screenshot
+  cr:save()
+  cr:scale(scale,scale)
+
+  -- Paint the screenshot in the rounded rectangle
+  cr:set_source_surface(surface(c.content))
+  cr:set_operator(cairo.Operator.IN)
+  cr:paint()
+  cr:restore()
+  cr:restore()
+
+  -- Add icon on top, "solve" the black window issue
+  local icon = surface(c.icon)
+  local w,h = icon:get_width(),icon:get_height()
+  local aspect,aspect_h = width / w,(height) / h
+  if aspect > aspect_h then aspect = aspect_h end
+  cr:translate((width-w*aspect)/2,(height-h*aspect)/2)
+  cr:scale(aspect, aspect)
+  cr:set_source_surface(icon)
+  cr:paint_with_alpha(0.5)
+
+  return img
 end
 
 function module.display_clients(s,direction)
@@ -201,8 +245,19 @@ function module.change_focus(mod,key,event,direction,is_swap,is_max)
 end
 
 --Tag related
-local function tag_icon(t)
-  return surface(awful.tag.geticon(t))
+local function tag_icon(t,width,height)
+  local img = cairo.ImageSurface(cairo.Format.ARGB32, width, height)
+  local cr = cairo.Context(img)
+
+  local icon = surface(awful.tag.geticon(t))
+  local w,h = icon:get_width(),icon:get_height()
+  local aspect,aspect_h = width / w,(height) / h
+  if aspect > aspect_h then aspect = aspect_h end
+  cr:translate((width-w*aspect)/2,(height-h*aspect)/2)
+  cr:scale(aspect, aspect)
+  cr:set_source_surface(icon)
+  cr:paint()
+  return img
 end
 
 local tmp_screen = nil

@@ -81,7 +81,7 @@ local function start_loop(is_swap,is_max)
 end
 
 function module.focus(direction,c,max)
-  local screen = (c and c.screen) or (capi.client.focus and capi.client.focus.screen) or capi.mouse.screen
+  local screen = (c or ((capi.client.focus and capi.client.focus.focusable) and capi.client.focus or capi.mouse)).screen
   -- Useless when there is only 1 client tiled, incompatible with the "max_out" mode (in this case, focus floating mode)
   if awful.layout.get(screen) == awful.layout.suit.max and #awful.client.tiled(screen) > 1 and not max then
     current_mode = "max"
