@@ -21,24 +21,6 @@ local function init()
   w.visible = true
 end
 
-local function get_round_rect(width,height,bg)
-  local img2 = cairo.ImageSurface(cairo.Format.ARGB32, width,height)
-  local cr2 = cairo.Context(img2)
-  cr2:set_source_rgba(0,0,0,0)
-  cr2:paint()
-  cr2:set_source(bg)
-  cr2:arc(rad,rad,rad,0,2*math.pi)
-  cr2:arc(width-rad,rad,rad,0,2*math.pi)
-  cr2:arc(rad  ,height-rad,rad,0,2*math.pi)
-  cr2:fill()
-  cr2:arc(width-rad,height-rad,rad,0,2*math.pi)
-  cr2:rectangle(rad,0,width-2*rad,height)
-  cr2:rectangle(0,rad,rad,height-2*rad)
-  cr2:rectangle(width-rad,rad,rad,height-2*rad)
-  cr2:fill()
-  return img2
-end
-
 local margin = 15
 local function create_arrow(cr,x,y,width, height,direction)
   cr:save()
@@ -92,8 +74,8 @@ local function draw_shape(s,collection,current_idx,icon_f,y,text_height)
   cr:paint()
 
   local white,bg = color("#FFFFFF"),color(beautiful.menu_bg_normal or beautiful.bg_normal)
-  local img2 = get_round_rect(width,height,white)
-  local img4 = get_round_rect(width-6,height-6,bg)
+--   local img2 = get_round_rect(width,height,white)
+--   local img4 = get_round_rect(width-6,height-6,bg)
 
   if not pango_l then
     local pango_crx = pangocairo.font_map_get_default():create_context()
@@ -106,15 +88,17 @@ local function draw_shape(s,collection,current_idx,icon_f,y,text_height)
   local nornal,focus = color(beautiful.fg_normal),color(beautiful.bg_urgent)
   for k,v in ipairs(collection) do
     -- Shape bounding
-    cr:set_source_surface(img2,dx,0)
-    cr:paint()
+    cr:set_source(white)
+    util.draw_round_rect(cr,dx,0,width,height,rad)
+    cr:fill()
 
-    -- Borders
+    -- Borders and background
     cr3:set_source(k==current_idx and focus or nornal)
-    cr3:rectangle(dx,0,width,height)
+    util.draw_round_rect(cr3,dx+border,0+border,width-2*border,height-2*border,rad)
+    cr3:set_line_width(2*border)
+    cr3:stroke_preserve()
+    cr3:set_source(bg)
     cr3:fill()
-    cr3:set_source_surface(img4,dx+border,border)
-    cr3:paint()
 
     -- Print the icon
     local icon = icon_f(v,width-20,height-20-text_height)
@@ -175,19 +159,11 @@ local function client_icon(c,width,height)
   local w,h = geom.width*scale,geom.height*scale
 
   -- Create a mask
-  cr:save()
+  util.draw_round_rect(cr,(width-w)/2,(height-h)/2,w,h,10)
+
+  cr:fill()
+
   cr:translate((width-w)/2,(height-h)/2)
-  cr:arc(10,10,10,0,math.pi*2)
-  cr:fill()
-  cr:arc(w-10,10,10,0,math.pi*2)
-  cr:fill()
-  cr:arc(w-10,h-10,10,0,math.pi*2)
-  cr:fill()
-  cr:arc(10,h-10,10,0,math.pi*2)
-  cr:fill()
-  cr:rectangle(10,0,w-20,h)
-  cr:rectangle(0,10,w,h-20)
-  cr:fill()
 
   -- Create a matrix to scale down the screenshot
   cr:save()

@@ -70,32 +70,6 @@ function module.get_geometry(tag)
   return results
 end
 
-local function draw_round_rect(cr,x,y,w,h)
-  cr:save()
-  cr:translate(x,y)
-  cr:new_path()
---   cr:move_to(0,radius+1)
---   cr:line_to(0,radius)
-  cr:arc(radius,radius,radius,math.pi,3*(math.pi/2))
-  cr:move_to(radius,0)
-  cr:line_to(w-2*radius,0)
-  cr:arc(w-radius,radius,radius,3*(math.pi/2),math.pi*2)
-  cr:move_to(w,radius)
-  cr:line_to(w,h-radius)
-  cr:arc(w-radius,h-radius,radius,math.pi*2,math.pi/2)
-  cr:move_to(w-radius,h)
-  cr:line_to(radius,h)
-  cr:arc(radius,h-radius,radius,math.pi/2,math.pi)
-  cr:move_to(0,h-radius)
-  cr:line_to(0,radius)
-  cr:move_to(0,radius)
-  cr:close_path()
-  cr:stroke_preserve()
---   cr:set_source_rgba(1,0,0,1)
---   cr:fill() --BUG
-  cr:restore()
-end
-
 function module.draw(tag,cr,width,height)
   local worked = false
   local l = module.get_geometry(tag)
@@ -104,10 +78,14 @@ function module.draw(tag,cr,width,height)
   local ratio = height/scr_geo.height
   local w_stretch = width/(scr_geo.width*ratio)
   local r,g,b = util.get_rgb()
-  cr:set_source_rgba(r,g,b,0.7)
   cr:set_line_width(3)
   for c,geom in pairs(l) do
-    draw_round_rect(cr,geom.x*ratio*w_stretch+margin,geom.y*ratio+margin,geom.width*ratio*w_stretch-margin*2,geom.height*ratio-margin*2)
+    util.draw_round_rect(cr,geom.x*ratio*w_stretch+margin,geom.y*ratio+margin,geom.width*ratio*w_stretch-margin*2,geom.height*ratio-margin*2,radius)
+    cr:close_path()
+    cr:set_source_rgba(r,g,b,0.7)
+    cr:stroke_preserve()
+    cr:set_source_rgba(r,g,b,0.2)
+    cr:fill()
     worked = true
   end
   --TODO floating clients

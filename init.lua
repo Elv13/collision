@@ -99,7 +99,7 @@ end
 
 function module.move(direction,c,max)
   current_mode = "move"
-  module._focus.global_bydirection(direction,c,true)
+  module._focus.global_bydirection(direction,c,true,max)
   start_loop(true,max)
 end
 
