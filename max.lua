@@ -1,31 +1,24 @@
 local capi = {screen=screen,client=client}
 local wibox = require("wibox")
 local awful = require("awful")
-local cairo        = require( "lgi"          ).cairo
-local color        = require( "gears.color"  )
-local beautiful    = require( "beautiful"    )
-local surface      = require( "gears.surface" )
+local cairo        = require( "lgi"              ).cairo
+local color        = require( "gears.color"      )
+local beautiful    = require( "beautiful"        )
+local surface      = require( "gears.surface"    )
+local layout       = require( "collision.layout" )
+local util         = require( "collision.util"   )
 local pango = require("lgi").Pango
 local pangocairo = require("lgi").PangoCairo
 local module = {}
 
 local w = nil
 local rad = 10
+local border = 3
 
 local function init()
   w = wibox{}
   w.ontop = true
   w.visible = true
-end
-
-local rr,rg,rb
-local function get_rgb()
-  if not rr then
-    local pat = color(beautiful.fg_normal)
-    local s,r,g,b,a = pat:get_rgba()
-    rr,rg,rb = r,g,b
-  end
-  return rr,rg,rb
 end
 
 local function get_round_rect(width,height,bg)
@@ -55,7 +48,7 @@ local function create_arrow(cr,x,y,width, height,direction)
     cr:rotate(math.pi)
   end
   cr:move_to(x,y)
-  local r,g,b = get_rgb()
+  local r,g,b = util.get_rgb()
   cr:set_source_rgba(r,g,b,0.15)
   cr:set_antialias(1)
   cr:rectangle(2*margin,2*(height/7),width/3,3*(height/7))
@@ -70,7 +63,7 @@ local function create_arrow(cr,x,y,width, height,direction)
 end
 
 local pango_l = nil
-local function draw_shape(s,collection,current_idx,icon_f,y)
+local function draw_shape(s,collection,current_idx,icon_f,y,text_height)
   local geo = capi.screen[s].geometry
   local wa  =capi.screen[s].workarea
 
@@ -120,11 +113,11 @@ local function draw_shape(s,collection,current_idx,icon_f,y)
     cr3:set_source(k==current_idx and focus or nornal)
     cr3:rectangle(dx,0,width,height)
     cr3:fill()
-    cr3:set_source_surface(img4,dx+3,3)
+    cr3:set_source_surface(img4,dx+border,border)
     cr3:paint()
 
     -- Print the icon
-    local icon = icon_f(v,width-20,height-20-50)
+    local icon = icon_f(v,width-20,height-20-text_height)
     if icon then
       cr3:save()
       cr3:translate(dx+10,10)
@@ -134,18 +127,18 @@ local function draw_shape(s,collection,current_idx,icon_f,y)
     end
 
     -- Print a pretty line
-    local r,g,b = get_rgb()
+    local r,g,b = util.get_rgb()
     cr3:set_source_rgba(r,g,b,0.7)
     cr3:set_line_width(1)
-    cr3:move_to(dx+margin,height - 47)
-    cr3:line_to(dx+margin+width-2*margin,height - 47)
+    cr3:move_to(dx+margin,height - text_height-border)
+    cr3:line_to(dx+margin+width-2*margin,height - text_height-border)
     cr3:stroke()
 
     -- Pring the text
     pango_l.text = v.name
     pango_l.width = pango.units_from_double(width-16)
-    pango_l.height = pango.units_from_double(height-40)
-    cr3:move_to(dx+8,height-40)
+    pango_l.height = pango.units_from_double(height-text_height-10)
+    cr3:move_to(dx+8,height-text_height-0)
     cr3:show_layout(pango_l)
 
     -- Draw an arrow
@@ -230,7 +223,7 @@ function module.display_clients(s,direction)
   end
   local clients = awful.client.tiled(s)
   local fk = awful.util.table.hasitem(clients,capi.client.focus)
-  draw_shape(s,clients,fk,client_icon)
+  draw_shape(s,clients,fk,client_icon,nil,50)
 end
 
 function module.change_focus(mod,key,event,direction,is_swap,is_max)
@@ -240,7 +233,7 @@ function module.change_focus(mod,key,event,direction,is_swap,is_max)
   c:raise()
   local clients = awful.client.tiled(s)
   local fk = awful.util.table.hasitem(clients,c)
-  draw_shape(s,clients,fk,client_icon)
+  draw_shape(s,clients,fk,client_icon,nil,50)
   return true
 end
 
@@ -249,14 +242,28 @@ local function tag_icon(t,width,height)
   local img = cairo.ImageSurface(cairo.Format.ARGB32, width, height)
   local cr = cairo.Context(img)
 
-  local icon = surface(awful.tag.geticon(t))
-  local w,h = icon:get_width(),icon:get_height()
-  local aspect,aspect_h = width / w,(height) / h
-  if aspect > aspect_h then aspect = aspect_h end
-  cr:translate((width-w*aspect)/2,(height-h*aspect)/2)
-  cr:scale(aspect, aspect)
-  cr:set_source_surface(icon)
-  cr:paint()
+  local has_layout = layout.draw(t,cr,width,height)
+
+  -- Create a monochrome representation of the icon
+  local icon_orig = surface(awful.tag.geticon(t))
+    if icon_orig then
+    local icon = cairo.ImageSurface(cairo.Format.ARGB32, icon_orig:get_width(), icon_orig:get_height())
+    local cr2 = cairo.Context(icon)
+    cr2:set_source_surface(icon_orig)
+    cr2:paint()
+
+    cr2:set_source(color(beautiful.fg_normal))
+    cr2:set_operator(cairo.Operator.IN)
+    cr2:paint()
+
+    local w,h = icon:get_width(),icon:get_height()
+    local aspect,aspect_h = width / w,(height) / h
+    if aspect > aspect_h then aspect = aspect_h end
+    cr:translate((width-w*aspect)/2,(height-h*aspect)/2)
+    cr:scale(aspect, aspect)
+    cr:set_source_surface(icon)
+    cr:paint_with_alpha(has_layout and 0.75 or 1)
+  end
   return img
 end
 
@@ -271,7 +278,7 @@ function module.display_tags(s,direction)
   end
   local tags = awful.tag.gettags(s)
   local fk = awful.util.table.hasitem(tags,awful.tag.selected(s))
-  draw_shape(s,tags,fk,tag_icon,capi.screen[s].workarea.y + 15)
+  draw_shape(s,tags,fk,tag_icon,capi.screen[s].workarea.y + 15,20)
 end
 
 function module.change_tag(mod,key,event,direction,is_swap,is_max)
@@ -279,7 +286,7 @@ function module.change_tag(mod,key,event,direction,is_swap,is_max)
   awful.tag[direction == "left" and "viewprev" or "viewnext"](s)
   local tags = awful.tag.gettags(s)
   local fk = awful.util.table.hasitem(tags,awful.tag.selected(s))
-  draw_shape(s,tags,fk,tag_icon,capi.screen[s].workarea.y + 15)
+  draw_shape(s,tags,fk,tag_icon,capi.screen[s].workarea.y + 15,20)
   return true
 end
 

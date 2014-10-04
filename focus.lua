@@ -166,10 +166,20 @@ function module.display(mod,key,event,direction,is_swap,is_max)
   for i,cl in ipairs(cltbl) do
     geomtbl[i] = cl:geometry()
   end
+
+  -- Sometime, there is no focussed clients
+  if not c then
+    c = geomtbl[1] or cltbl[1]
+  end
+
+  -- If there is still no accessible clients, there is nothing to display
+  if not c then return end
+
   display_wiboxes(cltbl,geomtbl,client.floating.get(c) or alayout.get(c.screen) == alayout.suit.floating,is_swap,c)
 end
 
 function module._quit()
+  if not wiboxes then return end
   for k,v in ipairs({"left","right","up","down","center"}) do
     wiboxes[v].visible = false
   end
