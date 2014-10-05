@@ -73,10 +73,11 @@ local function draw_shape(s,collection,current_idx,icon_f,y,text_height)
   cr:set_source_rgba(0,0,0,0)
   cr:paint()
 
+  -- Get the colors
   local white,bg = color("#FFFFFF"),color(beautiful.menu_bg_normal or beautiful.bg_normal)
---   local img2 = get_round_rect(width,height,white)
---   local img4 = get_round_rect(width-6,height-6,bg)
+  local nornal,focus = color(beautiful.fg_normal),color(beautiful.bg_urgent)
 
+  -- Init the text properties
   if not pango_l then
     local pango_crx = pangocairo.font_map_get_default():create_context()
     pango_l = pango.Layout.new(pango_crx)
@@ -85,7 +86,6 @@ local function draw_shape(s,collection,current_idx,icon_f,y,text_height)
     pango_l:set_wrap("CHAR")
   end
 
-  local nornal,focus = color(beautiful.fg_normal),color(beautiful.bg_urgent)
   for k,v in ipairs(collection) do
     -- Shape bounding
     cr:set_source(white)
@@ -223,23 +223,23 @@ local function tag_icon(t,width,height)
   -- Create a monochrome representation of the icon
   local icon_orig = surface(awful.tag.geticon(t))
     if icon_orig then
-    local icon = cairo.ImageSurface(cairo.Format.ARGB32, icon_orig:get_width(), icon_orig:get_height())
-    local cr2 = cairo.Context(icon)
-    cr2:set_source_surface(icon_orig)
-    cr2:paint()
+      local icon = cairo.ImageSurface(cairo.Format.ARGB32, icon_orig:get_width(), icon_orig:get_height())
+      local cr2 = cairo.Context(icon)
+      cr2:set_source_surface(icon_orig)
+      cr2:paint()
 
-    cr2:set_source(color(beautiful.fg_normal))
-    cr2:set_operator(cairo.Operator.IN)
-    cr2:paint()
+      cr2:set_source(color(beautiful.fg_normal))
+      cr2:set_operator(cairo.Operator.IN)
+      cr2:paint()
 
-    local w,h = icon:get_width(),icon:get_height()
-    local aspect,aspect_h = width / w,(height) / h
-    if aspect > aspect_h then aspect = aspect_h end
-    cr:translate((width-w*aspect)/2,(height-h*aspect)/2)
-    cr:scale(aspect, aspect)
-    cr:set_source_surface(icon)
-    cr:paint_with_alpha(has_layout and 0.75 or 1)
-  end
+      local w,h = icon:get_width(),icon:get_height()
+      local aspect,aspect_h = width / w,(height) / h
+      if aspect > aspect_h then aspect = aspect_h end
+      cr:translate((width-w*aspect)/2,(height-h*aspect)/2)
+      cr:scale(aspect, aspect)
+      cr:set_source_surface(icon)
+      cr:paint_with_alpha(has_layout and 0.35 or 1)
+    end
   return img
 end
 

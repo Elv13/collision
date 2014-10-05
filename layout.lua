@@ -39,13 +39,20 @@ local function gen_cls(c,results)
 end
 
 function module.get_geometry(tag)
-  local cls,results = {},setmetatable({},{__mode="k"})
+  local cls,results,flt = {},setmetatable({},{__mode="k"}),{}
   local s = awful.tag.getscreen(tag)
+  local l = awful.tag.getproperty(tag,"layout")
   local focus,focus_wrap = capi.client.focus,nil
-  for k,v in ipairs (tag:clients()) do
-    cls[#cls+1] = gen_cls(v,results)
-    if v == focus then
-      focus_wrap = cls[#cls]
+  for k,c in ipairs (tag:clients()) do
+    -- Handle floating client separately
+    local floating = awful.client.floating.get(c)
+    if (not floating) and (not l ==  awful.layout.suit.floating) then
+      cls[#cls+1] = gen_cls(c,results)
+      if c == focus then
+        focus_wrap = cls[#cls]
+      end
+    else
+      flt[#flt+1] = c:geometry()
     end
   end
 
@@ -64,29 +71,34 @@ function module.get_geometry(tag)
     workarea = capi.screen[s or 1].workarea
   }
 
-  local l = awful.tag.getproperty(tag,"layout")
   l.arrange(param)
 
-  return results
+  return results,flt
 end
 
 function module.draw(tag,cr,width,height)
   local worked = false
-  local l = module.get_geometry(tag)
+  local l,l2 = module.get_geometry(tag)
   local s = awful.tag.getscreen(tag)
   local scr_geo = capi.screen[s or 1].workarea
   local ratio = height/scr_geo.height
   local w_stretch = width/(scr_geo.width*ratio)
   local r,g,b = util.get_rgb()
   cr:set_line_width(3)
-  for c,geom in pairs(l) do
-    util.draw_round_rect(cr,geom.x*ratio*w_stretch+margin,geom.y*ratio+margin,geom.width*ratio*w_stretch-margin*2,geom.height*ratio-margin*2,radius)
-    cr:close_path()
-    cr:set_source_rgba(r,g,b,0.7)
-    cr:stroke_preserve()
-    cr:set_source_rgba(r,g,b,0.2)
-    cr:fill()
-    worked = true
+  for c,ll in ipairs({l,l2}) do
+    for c,geom in pairs(ll) do
+      util.draw_round_rect(cr,geom.x*ratio*w_stretch+margin,geom.y*ratio+margin,geom.width*ratio*w_stretch-margin*2,geom.height*ratio-margin*2,radius)
+      cr:close_path()
+      cr:set_source_rgba(r,g,b,0.7)
+      cr:stroke_preserve()
+      cr:set_source_rgba(r,g,b,0.2)
+      cr:fill()
+
+      -- Draw an icon in the region
+      --TODO
+
+      worked = true
+    end
   end
   --TODO floating clients
   return worked
