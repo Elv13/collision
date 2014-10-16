@@ -3,13 +3,15 @@ local capi = { client = client , mouse      = mouse     ,
 
 local setmetatable = setmetatable
 local ipairs       = ipairs
-local util         = require( "awful.util"   )
-local client       = require( "awful.client" )
-local alayout      = require( "awful.layout" )
-local wibox        = require( "wibox"        )
-local cairo        = require( "lgi"          ).cairo
-local beautiful    = require( "beautiful"    )
-local color        = require( "gears.color"  )
+local util         = require( "awful.util"     )
+local client       = require( "awful.client"   )
+local tag          = require( "awful.tag"      )
+local alayout      = require( "awful.layout"   )
+local wibox        = require( "wibox"          )
+local cairo        = require( "lgi"            ).cairo
+local beautiful    = require( "beautiful"      )
+local color        = require( "gears.color"    )
+local col_utils    = require( "collision.util" )
 
 local module = {}
 local wiboxes,delta = nil,100
@@ -142,8 +144,15 @@ local function bydirection(dir, c, swap,max)
           capi.client.focus = cltbl[((not cltbl[target] and #cltbl == 1) and 1 or target)]
           capi.client.focus:raise()
         else
-          --BUG swap doesn't work if the screen is not the same
-          c:swap(cltbl[((not cltbl[target] and #cltbl == 1) and 1 or target)])
+          local other = cltbl[((not cltbl[target] and #cltbl == 1) and 1 or target)]
+          if other.screen == c.screen or col_utils.settings.swap_across_screen then
+            --BUG swap doesn't work if the screen is not the same
+            c:swap(other)
+          else
+            local t = tag.selected(other.screen) --TODO get index
+            c.screen = other.screen
+            c:tags({t})
+          end
         end
         display_wiboxes(cltbl,geomtbl,float,swap,c)
       end

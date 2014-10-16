@@ -1,4 +1,4 @@
-local capi = {screen=screen,client=client}
+local capi = {screen=screen,client=client,mouse=mouse}
 local wibox = require("wibox")
 local awful = require("awful")
 local cairo        = require( "lgi"              ).cairo
@@ -243,26 +243,32 @@ local function tag_icon(t,width,height)
   return img
 end
 
-local tmp_screen = nil
-function module.display_tags(s,direction)
-  if not w then
-    init()
-  end
-  tmp_screen = s
-  if direction then
+local function change_tag(s,direction,is_swap)
+  local s = capi.client.focus and capi.client.focus.screen or capi.mouse.screen
+  if not is_swap then
     awful.tag[direction == "left" and "viewprev" or "viewnext"](s)
+  else
+    -- Move the tag
+    local t = awful.tag.selected(s)
+    local cur_idx,count = awful.tag.getidx(t),#awful.tag.gettags(s)
+    cur_idx = cur_idx + (direction == "left" and -1 or 1)
+    cur_idx = cur_idx == 0 and count or cur_idx > count and 1 or cur_idx
+    awful.tag.move(cur_idx,t)
   end
   local tags = awful.tag.gettags(s)
   local fk = awful.util.table.hasitem(tags,awful.tag.selected(s))
   draw_shape(s,tags,fk,tag_icon,capi.screen[s].workarea.y + 15,20)
 end
 
+function module.display_tags(s,direction,c,is_swap,is_max)
+  if not w then
+    init()
+  end
+  change_tag(s,direction,is_swap)
+end
+
 function module.change_tag(mod,key,event,direction,is_swap,is_max)
-  local s = tmp_screen or capi.client.focus.screen
-  awful.tag[direction == "left" and "viewprev" or "viewnext"](s)
-  local tags = awful.tag.gettags(s)
-  local fk = awful.util.table.hasitem(tags,awful.tag.selected(s))
-  draw_shape(s,tags,fk,tag_icon,capi.screen[s].workarea.y + 15,20)
+  change_tag(s,direction,is_swap)
   return true
 end
 

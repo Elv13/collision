@@ -1,12 +1,15 @@
 local capi = {root=root,client=client,mouse=mouse,
                screen = screen, keygrabber = keygrabber}
-local util         = require( "awful.util" )
-local awful        = require( "awful"      )
+local util         = require( "awful.util"     )
+local awful        = require( "awful"          )
+local glib         = require( "lgi"            ).GLib
+local col_utils    = require( "collision.util" )
 local module = {
   _focus  = require( "collision.focus" ),
   _resize = require( "collision.resize"),
   _max    = require( "collision.max"   ),
   _screen = require( "collision.screen"),
+  settings= col_utils.settings          ,
 }
 
 local current_mode = "focus"
@@ -109,11 +112,11 @@ function module.resize(direction,c,max)
   module._resize.display(c)
 end
 
-function module.tag(direction,c,max)
+function module.tag(direction,swap,max)
   current_mode = "tag"
-  local c = c or capi.client.focus
-  module._max.display_tags((c) and c.screen or capi.mouse.screen,direction)
-  start_loop(false,max)
+  local c = capi.client.focus
+  module._max.display_tags((c) and c.screen or capi.mouse.screen,direction,c,true,max)
+  start_loop(swap,max)
 end
 
 function module.screen(direction)
@@ -127,20 +130,24 @@ local function new(k)
   keys = k or keys
   local aw = {}
 
-  for k,v in pairs(keys) do
-    for _,key_nane in ipairs(v) do
-      aw[#aw+1] = awful.key({ "Mod4",                    }, key_nane, function () module.focus (k         ) end)
-      aw[#aw+1] = awful.key({ "Mod4", "Mod1"             }, key_nane, function () module.resize(k         ) end)
-      aw[#aw+1] = awful.key({ "Mod4", "Shift"            }, key_nane, function () module.move  (k         ) end)
-      aw[#aw+1] = awful.key({ "Mod4", "Shift", "Control" }, key_nane, function () module.move  (k,nil,true) end)
-      aw[#aw+1] = awful.key({ "Mod4",          "Control" }, key_nane, function () module.focus (k,nil,true) end)
-      aw[#aw+1] = awful.key({ "Mod4", "Mod1" , "Control" }, key_nane, function () module.screen(k         ) end)
-      if k == "left" or k =="right" then -- Conflict with my text editor, so I say no
-        aw[#aw+1] = awful.key({ "Mod1",        "Control" }, key_nane, function () module.tag   (k,nil,true) end)
+  -- This have to be executer after rc.lua
+  glib.idle_add(glib.PRIORITY_DEFAULT_IDLE, function()
+    for k,v in pairs(keys) do
+      for _,key_nane in ipairs(v) do
+        aw[#aw+1] = awful.key({ "Mod4",                      }, key_nane, function () module.focus (k          ) end)
+        aw[#aw+1] = awful.key({ "Mod4", "Mod1"               }, key_nane, function () module.resize(k          ) end)
+        aw[#aw+1] = awful.key({ "Mod4", "Shift"              }, key_nane, function () module.move  (k          ) end)
+        aw[#aw+1] = awful.key({ "Mod4", "Shift",   "Control" }, key_nane, function () module.move  (k,nil ,true) end)
+        aw[#aw+1] = awful.key({ "Mod4",            "Control" }, key_nane, function () module.focus (k,nil ,true) end)
+        aw[#aw+1] = awful.key({ "Mod4", "Mod1" ,   "Control" }, key_nane, function () module.screen(k          ) end)
+        if k == "left" or k =="right" then -- Conflict with my text editor, so I say no
+          aw[#aw+1] = awful.key({ "Mod1",          "Control" }, key_nane, function () module.tag   (k,nil ,true) end)
+          aw[#aw+1] = awful.key({ "Mod1", "Shift", "Control" }, key_nane, function () module.tag   (k,true,true) end)
+        end
       end
     end
-  end
-  capi.root.keys(awful.util.table.join(capi.root.keys(),unpack(aw)))
+    capi.root.keys(awful.util.table.join(capi.root.keys(),unpack(aw)))
+  end)
 end
 
 return setmetatable(module, { __call = function(_, ...) return new(...) end })

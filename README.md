@@ -22,7 +22,7 @@ First, clone the repository
 
 Now, open ~/.config/awesome/rc.lua (or copy /etc/xdg/awesome/rc.lua to 
 ~/.config/awesome/rc.lua fist if you never modified your Awesome config before)
- and add this line at the **end** of rc.lua:
+ and add this line somewhere in your `rc.lua`:
 
 ```lua
     require("collision")()
@@ -87,3 +87,10 @@ This can be used:
 
 Of course, if the `Vim` keys are used, any other shortcut binded to them have to
 be removed from rc.lua.
+
+# Settings
+
+```lua
+-- Swap clients across screen instead of adding them to the other tag
+collision.settings.swap_across_screen = true
+```
