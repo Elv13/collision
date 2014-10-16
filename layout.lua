@@ -45,14 +45,16 @@ function module.get_geometry(tag)
   local focus,focus_wrap = capi.client.focus,nil
   for k,c in ipairs (tag:clients()) do
     -- Handle floating client separately
-    local floating = awful.client.floating.get(c)
-    if (not floating) and (not l ==  awful.layout.suit.floating) then
-      cls[#cls+1] = gen_cls(c,results)
-      if c == focus then
-        focus_wrap = cls[#cls]
+    if not c.minimized then
+      local floating = awful.client.floating.get(c)
+      if (not floating) and (not l ==  awful.layout.suit.floating) then
+        cls[#cls+1] = gen_cls(c,results)
+        if c == focus then
+          focus_wrap = cls[#cls]
+        end
+      else
+        flt[#flt+1] = c:geometry()
       end
-    else
-      flt[#flt+1] = c:geometry()
     end
   end
 
