@@ -121,7 +121,7 @@ end
 
 function module.screen(direction)
   current_mode = "screen"
-  module._screen.display()
+  module._screen.display(nil,direction)
   start_loop(false,max)
 end
 

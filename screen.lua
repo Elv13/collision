@@ -17,24 +17,29 @@ local shape = nil
 local pss   = 1
 
 -- Screen order is not always geometrical, sort them
+-- local function get_first_screen()
+--   local ret = {}
+--   for i=1,capi.screen.count() do
+--     local geom = capi.screen[i].geometry
+--     if #ret == 0 then
+--       ret[1] = i
+--     elseif geom.x < capi.screen[ret[1]].geometry.x then
+--       table.insert(ret,1,i)
+--     else
+--       for j=1,#ret do
+--         if geom.x > capi.screen[ret[j]].geometry.x then
+--           table.insert(ret,j,i)
+--           break
+--         end
+--       end
+--     end
+--   end
+--   return ret
+-- end
 local function get_first_screen()
   local ret = {}
   for i=1,capi.screen.count() do
-    local geom = capi.screen[i].geometry
-    if geom.x == 0 then
-      if #ret == 0 then
-        ret[1] = i
-      elseif geom.x < capi.screen[ret[1]].geometry.x then
-        table.insert(ret,1,i)
-      else
-        for j=1,#ret do
-          if geom.x > capi.screen[ret[j]].geometry.x then
-            table.insert(ret,j,i)
-            break
-          end
-        end
-      end
-    end
+    ret[i] = i
   end
   return ret
 end
@@ -83,14 +88,13 @@ local function create_shape_bounding(wa)
   return w
 end
 
-local function init_wiboxes()
+local function init_wiboxes(direction)
   if #wiboxes > 0 then return end
   for s=1, capi.screen.count() do
     local w = create_shape_bounding(capi.screen[s].geometry)
     wiboxes[s] = w
     w:set_widget(wibox.widget.imagebox(create_text(s)))
   end
-  module.reload()
   return true
 end
 
@@ -103,22 +107,27 @@ local function next_screen(ss,dir)
     end
   end
 
-  if dir == "Left" then
+  if dir == "left" then
     scr_index = scr_index == 1 and #screens or scr_index - 1
-  elseif rit == "Right" then
+  elseif dir == "right" then
     scr_index = scr_index == #screens and 1 or scr_index+1
   end
 
   local geom = capi.screen[scr_index].geometry
-  capi.mouse.coords({x=geom.x+geom.width/2,y=geom.y+geom.height/2})
+  capi.mouse.coords({x=geom.x+geom.width/2,y=geom.y+geom.height/2+55})
+  local c = awful.mouse.client_under_pointer()
+  if c then
+    capi.client.focus = c
+  end
 
   return scr_index
 end
 
-function module.display()
+function module.display(_,dir)
   if #wiboxes == 0 then
-    init_wiboxes()
+    init_wiboxes(dir)
   end
+  module.reload(nil,direction)
 end
 
 function module.hide()
@@ -132,7 +141,7 @@ end
 function module.reload(_,dir)
   local ss,opss = capi.client.focus and capi.client.focus.screen or capi.mouse.screen,pss
   if dir then
-    ss = next_screen(ss,dir)
+    ss = next_screen(ss,dir:lower())
   end
 
   if pss ~= ss then
