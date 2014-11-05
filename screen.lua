@@ -128,6 +128,9 @@ function module.display(_,dir)
     init_wiboxes(dir)
   end
   module.reload(nil,direction)
+  local ss,opss = capi.client.focus and capi.client.focus.screen or capi.mouse.screen,pss
+  next_screen(ss,dir)
+  module.reload(nil,direction)
 end
 
 function module.hide()

@@ -115,7 +115,7 @@ end
 function module.tag(direction,swap,max)
   current_mode = "tag"
   local c = capi.client.focus
-  module._max.display_tags((c) and c.screen or capi.mouse.screen,direction,c,true,max)
+  module._max.display_tags((c) and c.screen or capi.mouse.screen,direction,c,swap,max)
   start_loop(swap,max)
 end
 
