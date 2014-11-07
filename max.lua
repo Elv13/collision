@@ -95,7 +95,7 @@ local function draw_shape(s,collection,current_idx,icon_f,y,text_height)
     -- Borders and background
     cr3:set_source(k==current_idx and focus or nornal)
     util.draw_round_rect(cr3,dx+border,0+border,width-2*border,height-2*border,rad)
-    cr3:set_line_width(2*border)
+    cr3:set_line_width(2*border + 4) -- The 4 is required to cover the non-antialiased region
     cr3:stroke_preserve()
     cr3:set_source(bg)
     cr3:fill()

@@ -98,7 +98,7 @@ local function init_wiboxes(direction)
   return true
 end
 
-local function next_screen(ss,dir)
+local function next_screen(ss,dir,move)
   local scr_index = ss
   for k,s in ipairs(screens) do
     if ss == s then
@@ -115,21 +115,28 @@ local function next_screen(ss,dir)
 
   local geom = capi.screen[scr_index].geometry
   capi.mouse.coords({x=geom.x+geom.width/2,y=geom.y+geom.height/2+55})
-  local c = awful.mouse.client_under_pointer()
-  if c then
-    capi.client.focus = c
+
+  if move then
+    local t = awful.tag.selected(ss)
+    awful.tag.setscreen(t,scr_index)
+    awful.tag.viewonly(t)
+  else
+    local c = awful.mouse.client_under_pointer()
+    if c then
+      capi.client.focus = c
+    end
   end
 
   return scr_index
 end
 
-function module.display(_,dir)
+function module.display(_,dir,move)
   if #wiboxes == 0 then
     init_wiboxes(dir)
   end
   module.reload(nil,direction)
   local ss,opss = capi.client.focus and capi.client.focus.screen or capi.mouse.screen,pss
-  next_screen(ss,dir)
+  next_screen(ss,dir,move)
   module.reload(nil,direction)
 end
 
@@ -141,10 +148,11 @@ function module.hide()
   end
 end
 
-function module.reload(_,dir)
+function module.reload(mod,dir,__,___,move)
+print("LA",mod and #mod)
   local ss,opss = capi.client.focus and capi.client.focus.screen or capi.mouse.screen,pss
   if dir then
-    ss = next_screen(ss,dir:lower())
+    ss = next_screen(ss,dir:lower(),move or (mod and #mod == 4))
   end
 
   if pss ~= ss then

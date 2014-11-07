@@ -119,9 +119,9 @@ function module.tag(direction,swap,max)
   start_loop(swap,max)
 end
 
-function module.screen(direction)
+function module.screen(direction, move)
   current_mode = "screen"
-  module._screen.display(nil,direction)
+  module._screen.display(nil,direction,move)
   start_loop(false,max)
 end
 
@@ -134,15 +134,16 @@ local function new(k)
   glib.idle_add(glib.PRIORITY_DEFAULT_IDLE, function()
     for k,v in pairs(keys) do
       for _,key_nane in ipairs(v) do
-        aw[#aw+1] = awful.key({ "Mod4",                      }, key_nane, function () module.focus (k          ) end)
-        aw[#aw+1] = awful.key({ "Mod4", "Mod1"               }, key_nane, function () module.resize(k          ) end)
-        aw[#aw+1] = awful.key({ "Mod4", "Shift"              }, key_nane, function () module.move  (k          ) end)
-        aw[#aw+1] = awful.key({ "Mod4", "Shift",   "Control" }, key_nane, function () module.move  (k,nil ,true) end)
-        aw[#aw+1] = awful.key({ "Mod4",            "Control" }, key_nane, function () module.focus (k,nil ,true) end)
-        aw[#aw+1] = awful.key({ "Mod4", "Mod1" ,   "Control" }, key_nane, function () module.screen(k          ) end)
+        aw[#aw+1] = awful.key({ "Mod4",                              }, key_nane, function () module.focus (k          ) end)
+        aw[#aw+1] = awful.key({ "Mod4", "Mod1"                       }, key_nane, function () module.resize(k          ) end)
+        aw[#aw+1] = awful.key({ "Mod4", "Shift"                      }, key_nane, function () module.move  (k          ) end)
+        aw[#aw+1] = awful.key({ "Mod4", "Shift",   "Control"         }, key_nane, function () module.move  (k,nil ,true) end)
+        aw[#aw+1] = awful.key({ "Mod4",            "Control"         }, key_nane, function () module.focus (k,nil ,true) end)
+        aw[#aw+1] = awful.key({ "Mod4", "Mod1" ,   "Control"         }, key_nane, function () module.screen(k          ) end)
+          aw[#aw+1] = awful.key({ "Mod1", "Shift", "Control", "Mod4" }, key_nane, function () module.screen(k,true     ) end)
         if k == "left" or k =="right" then -- Conflict with my text editor, so I say no
-          aw[#aw+1] = awful.key({ "Mod1",          "Control" }, key_nane, function () module.tag   (k,nil ,true) end)
-          aw[#aw+1] = awful.key({ "Mod1", "Shift", "Control" }, key_nane, function () module.tag   (k,true,true) end)
+          aw[#aw+1] = awful.key({ "Mod1",          "Control"         }, key_nane, function () module.tag   (k,nil ,true) end)
+          aw[#aw+1] = awful.key({ "Mod1", "Shift", "Control"         }, key_nane, function () module.tag   (k,true,true) end)
         end
       end
     end
