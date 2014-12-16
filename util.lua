@@ -1,6 +1,7 @@
 local math      = math
 local color     = require( "gears.color" )
 local beautiful = require( "beautiful"   )
+local glib      = require("lgi").GLib
 
 local module = {settings={}}
 
@@ -26,5 +27,24 @@ function module.draw_round_rect(cr,x,y,w,h,radius)
   cr:close_path()
   cr:restore()
 end
+
+local function refresh_dt(last_sec,last_usec,callback,delay)
+  local tv = glib.TimeVal()
+  glib.get_current_time(tv)
+  local dt = (tv.tv_sec*1000000+tv.tv_usec)-(last_sec*1000000+last_usec)
+  if dt < delay then
+    callback()
+  end
+  return tv.tv_sec,tv.tv_usec
+end
+
+function module.double_click(callback,delay)
+  delay = delay or 250000
+  local ds,du = 0,0
+  return function()
+    ds,du = refresh_dt(ds,du,callback,delay)
+  end
+end
+
 return module
 -- kate: space-indent on; indent-width 2; replace-tabs on;
