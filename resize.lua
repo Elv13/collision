@@ -153,8 +153,14 @@ function module.resize(mod,key,event,direction,is_swap,is_max)
   return true
 end
 
+local corners = {
+  tl = function(geom,mouse,curX,curY) return {x=geom.x+(mouse.x-curX),y=geom.y+(mouse.y-curY),width=geom.width-(mouse.x-curX),height=geom.height-(mouse.y-curY)} end,
+  bl = function(geom,mouse,curX,curY) return {x=geom.x+(mouse.x-curX),y=geom.y               ,width=geom.width-(mouse.x-curX),height=geom.height-(curY-mouse.y)} end,
+  br = function(geom,mouse,curX,curY) return {x=geom.x               ,y=geom.y               ,width=geom.width-(curX-mouse.x),height=geom.height-(curY-mouse.y)} end,
+}
+
 -- Resize from the top left corner
-function module.mouse_resize(c,btn)
+function module.mouse_resize(c,corner)
   module.display(c)
   local geom,curX,curY = c:geometry(),capi.mouse.coords().x,capi.mouse.coords().y
   capi.mousegrabber.run(function(mouse)
@@ -162,7 +168,7 @@ function module.mouse_resize(c,btn)
       module.hide()
       return false
     elseif mouse.x ~= curX and mouse.y ~= curY then
-        c:geometry({x=geom.x+(mouse.x-curX),y=geom.y+(mouse.y-curY),width=geom.width-(mouse.x-curX),height=geom.height-(mouse.y-curY)})
+      c:geometry(corners[corner or "tl"](geom,mouse,curX,curY))
     end
     return true
   end,"fleur")

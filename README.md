@@ -51,7 +51,7 @@ while the `Control` key is used to max out the effect.
 
 | Modifier 1 | Modifier 2   |  Modifier 3  | Effect                                                |
 | :--------: | :----------: | :----------: | ----------------------------------------------------- |
-| `Mod4`     |              |              | Move the focus on the tiled layer                     |
+| `Mod4`     |              |              | Move the focus om the tiled layer                     |
 | `Mod4`     |              | `Control`    | Move the focus on the floating layer                  |
 | `Mod4`     | `Shift`      |              | Move a client in the tiled or floating layer          |
 | `Mod4`     | `Shift`      | `Control`    | Move a floating client to the far side of that screen |
@@ -95,3 +95,8 @@ be removed from rc.lua.
 -- Swap clients across screen instead of adding them to the other tag
 collision.settings.swap_across_screen = true
 ```
+
+# Other
+
+The `collision.select_screen(idx)` function allow to select a screen and can be
+assigned to shortcuts.

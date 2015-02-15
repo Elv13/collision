@@ -98,21 +98,7 @@ local function init_wiboxes(direction)
   return true
 end
 
-local function next_screen(ss,dir,move)
-  local scr_index = ss
-  for k,s in ipairs(screens) do
-    if ss == s then
-      scr_index = k
-      break
-    end
-  end
-
-  if dir == "left" then
-    scr_index = scr_index == 1 and #screens or scr_index - 1
-  elseif dir == "right" then
-    scr_index = scr_index == #screens and 1 or scr_index+1
-  end
-
+local function select_screen(scr_index,move)
   local geom = capi.screen[scr_index].geometry
   capi.mouse.coords({x=geom.x+geom.width/2,y=geom.y+geom.height/2+55})
 
@@ -128,6 +114,24 @@ local function next_screen(ss,dir,move)
   end
 
   return scr_index
+end
+
+local function next_screen(ss,dir,move)
+  local scr_index = ss
+  for k,s in ipairs(screens) do
+    if ss == s then
+      scr_index = k
+      break
+    end
+  end
+
+  if dir == "left" then
+    scr_index = scr_index == 1 and #screens or scr_index - 1
+  elseif dir == "right" then
+    scr_index = scr_index == #screens and 1 or scr_index+1
+  end
+
+  return select_screen(scr_index,move)
 end
 
 function module.display(_,dir,move)
@@ -166,6 +170,10 @@ print("LA",mod and #mod)
     wiboxes[s].visible = true
   end
   return true
+end
+
+function module.select_screen(idx)
+  select_screen(idx,false)
 end
 
 return module

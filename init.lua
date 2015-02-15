@@ -10,6 +10,7 @@ local module = {
   _max    = require( "collision.max"   ),
   _screen = require( "collision.screen"),
   settings= col_utils.settings          ,
+  util    = col_utils                   ,
 }
 
 local current_mode = "focus"
@@ -123,6 +124,12 @@ function module.screen(direction, move)
   current_mode = "screen"
   module._screen.display(nil,direction,move)
   start_loop(false,max)
+end
+
+function module.select_screen(idx)
+  if idx and idx > 0 and idx < capi.screen.count() then
+    module._screen.select_screen(idx)
+  end
 end
 
 local function new(k)
