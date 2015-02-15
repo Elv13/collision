@@ -1,4 +1,4 @@
-local capi = {screen=screen,client=client,mouse=mouse}
+local capi = {screen=screen,client=client,mouse=mouse, keygrabber = keygrabber}
 local math,table = math,table
 local wibox        = require( "wibox"         )
 local awful        = require( "awful"         )
@@ -15,6 +15,7 @@ local wiboxes = {}
 local size  = 100
 local shape = nil
 local pss   = 1
+local opss  = nil
 
 -- Screen order is not always geometrical, sort them
 local function get_first_screen()
@@ -42,15 +43,15 @@ for k,v in ipairs(screens) do
   screens_inv[v] = k
 end
 
-local function current_screen()
---   return capi.client.focus and capi.client.focus.screen or capi.mouse.screen
-  return capi.mouse.screen
+local function current_screen(focus)
+  return (not focus) and capi.mouse.screen or (capi.client.focus and capi.client.focus.screen or capi.mouse.screen)
 end
 
 local function create_text(text)
   local img = cairo.ImageSurface(cairo.Format.ARGB32, size, size)
   local cr = cairo.Context(img)
-  cr:set_source(color(text == screens[pss] and beautiful.bg_urgent or beautiful.bg_alternate or beautiful.bg_normal))
+  local selected = text == screens[pss]
+  cr:set_source(color(selected and beautiful.bg_urgent or beautiful.bg_alternate or beautiful.bg_normal))
   cr:paint()
   cr:set_source(color(beautiful.fg_normal))
   cr:set_line_width(6)
@@ -100,12 +101,12 @@ local function init_wiboxes(direction)
   return true
 end
 
-local function select_screen(scr_index,move)
+local function select_screen(scr_index,move,old_screen)
   local geom = capi.screen[scr_index].geometry
   capi.mouse.coords({x=geom.x+geom.width/2,y=geom.y+geom.height/2+55})
 
   if move then
-    local t = awful.tag.selected(ss)
+    local t = awful.tag.selected(old_screen)
     awful.tag.setscreen(t,scr_index)
     awful.tag.viewonly(t)
   else
@@ -119,13 +120,7 @@ local function select_screen(scr_index,move)
 end
 
 local function next_screen(ss,dir,move)
-  local scr_index = ss
-  for k,s in ipairs(screens) do
-    if ss == s then
-      scr_index = k
-      break
-    end
-  end
+  local scr_index = screens_inv[ss]
 
   if dir == "left" then
     scr_index = scr_index == 1 and #screens or scr_index - 1
@@ -133,7 +128,7 @@ local function next_screen(ss,dir,move)
     scr_index = scr_index == #screens and 1 or scr_index+1
   end
 
-  return select_screen(screens_inv[scr_index],move)
+  return select_screen(screens_inv[scr_index],move,ss)
 end
 
 function module.display(_,dir,move)
@@ -141,9 +136,21 @@ function module.display(_,dir,move)
     init_wiboxes(dir)
   end
   module.reload(nil,direction)
-  local ss,opss = current_screen(),pss
+  local ss,opss = current_screen(move),pss
   next_screen(ss,dir,move)
   module.reload(nil,direction)
+end
+
+local function highlight_screen(ss)
+  if pss ~= ss then
+    pss = nil
+    -- Reset the color on the last selected screen
+    if opss then
+      wiboxes[opss]:set_widget(wibox.widget.imagebox(create_text(screens[opss])))
+    end
+    pss = ss
+    wiboxes[ss]:set_widget(wibox.widget.imagebox(create_text(screens[ss])))
+  end
 end
 
 function module.hide()
@@ -154,27 +161,46 @@ function module.hide()
   end
 end
 
+local function show()
+  for s=1, capi.screen.count() do
+    wiboxes[s].visible = true
+  end
+end
+
 function module.reload(mod,dir,__,___,move)
-  local ss,opss = current_screen(),pss
+  opss     = pss
+  local ss = current_screen(move)
   if dir then
     ss = next_screen(ss,dir:lower(),move or (mod and #mod == 4))
   end
 
-  if pss ~= ss then
-    pss = nil
-    wiboxes[opss]:set_widget(wibox.widget.imagebox(create_text(screens[opss])))
-    pss = ss
-    wiboxes[ss]:set_widget(wibox.widget.imagebox(create_text(screens[ss])))
-  end
+  highlight_screen(ss)
 
-  for s=1, capi.screen.count() do
-    wiboxes[s].visible = true
-  end
+  show()
+
   return true
 end
 
 function module.select_screen(idx)
-  select_screen(idx,false)
+  select_screen(screens_inv[idx],false)
+  print("ENTER",idx)
+  if #wiboxes == 0 then
+    init_wiboxes(dir)
+  end
+
+  highlight_screen(idx)
+  
+  show()
+
+  capi.keygrabber.run(function(mod, key, event)
+    print("EVENT",event)
+    if event == "release" then
+      module.hide()
+      capi.keygrabber.stop()
+      return false
+    end
+    return true
+  end)
 end
 
 return module
