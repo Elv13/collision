@@ -17,38 +17,40 @@ local shape = nil
 local pss   = 1
 
 -- Screen order is not always geometrical, sort them
--- local function get_first_screen()
---   local ret = {}
---   for i=1,capi.screen.count() do
---     local geom = capi.screen[i].geometry
---     if #ret == 0 then
---       ret[1] = i
---     elseif geom.x < capi.screen[ret[1]].geometry.x then
---       table.insert(ret,1,i)
---     else
---       for j=1,#ret do
---         if geom.x > capi.screen[ret[j]].geometry.x then
---           table.insert(ret,j,i)
---           break
---         end
---       end
---     end
---   end
---   return ret
--- end
 local function get_first_screen()
   local ret = {}
   for i=1,capi.screen.count() do
-    ret[i] = i
+    local geom = capi.screen[i].geometry
+    if #ret == 0 then
+      ret[1] = i
+    elseif geom.x < capi.screen[ret[1]].geometry.x then
+      table.insert(ret,1,i)
+    else
+      for j=#ret,1,-1 do
+        if geom.x > capi.screen[ret[j]].geometry.x then
+          table.insert(ret,j+1,i)
+          break
+        end
+      end
+    end
   end
   return ret
 end
-local screens = get_first_screen()
+
+local screens,screens_inv = get_first_screen(),{}
+for k,v in ipairs(screens) do
+  screens_inv[v] = k
+end
+
+local function current_screen()
+--   return capi.client.focus and capi.client.focus.screen or capi.mouse.screen
+  return capi.mouse.screen
+end
 
 local function create_text(text)
   local img = cairo.ImageSurface(cairo.Format.ARGB32, size, size)
   local cr = cairo.Context(img)
-  cr:set_source(color(text == pss and beautiful.bg_urgent or beautiful.bg_alternate or beautiful.bg_normal))
+  cr:set_source(color(text == screens[pss] and beautiful.bg_urgent or beautiful.bg_alternate or beautiful.bg_normal))
   cr:paint()
   cr:set_source(color(beautiful.fg_normal))
   cr:set_line_width(6)
@@ -93,7 +95,7 @@ local function init_wiboxes(direction)
   for s=1, capi.screen.count() do
     local w = create_shape_bounding(capi.screen[s].geometry)
     wiboxes[s] = w
-    w:set_widget(wibox.widget.imagebox(create_text(s)))
+    w:set_widget(wibox.widget.imagebox(create_text(screens[s])))
   end
   return true
 end
@@ -131,7 +133,7 @@ local function next_screen(ss,dir,move)
     scr_index = scr_index == #screens and 1 or scr_index+1
   end
 
-  return select_screen(scr_index,move)
+  return select_screen(screens_inv[scr_index],move)
 end
 
 function module.display(_,dir,move)
@@ -139,7 +141,7 @@ function module.display(_,dir,move)
     init_wiboxes(dir)
   end
   module.reload(nil,direction)
-  local ss,opss = capi.client.focus and capi.client.focus.screen or capi.mouse.screen,pss
+  local ss,opss = current_screen(),pss
   next_screen(ss,dir,move)
   module.reload(nil,direction)
 end
@@ -153,17 +155,16 @@ function module.hide()
 end
 
 function module.reload(mod,dir,__,___,move)
-print("LA",mod and #mod)
-  local ss,opss = capi.client.focus and capi.client.focus.screen or capi.mouse.screen,pss
+  local ss,opss = current_screen(),pss
   if dir then
     ss = next_screen(ss,dir:lower(),move or (mod and #mod == 4))
   end
 
   if pss ~= ss then
     pss = nil
-    wiboxes[opss]:set_widget(wibox.widget.imagebox(create_text(opss)))
+    wiboxes[opss]:set_widget(wibox.widget.imagebox(create_text(screens[opss])))
     pss = ss
-    wiboxes[ss]:set_widget(wibox.widget.imagebox(create_text(ss)))
+    wiboxes[ss]:set_widget(wibox.widget.imagebox(create_text(screens[ss])))
   end
 
   for s=1, capi.screen.count() do
