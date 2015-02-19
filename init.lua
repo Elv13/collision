@@ -1,4 +1,4 @@
-local capi = {root=root,client=client,mouse=mouse, timer=timer
+local capi = {root=root,client=client,mouse=mouse, timer=timer,
                screen = screen, keygrabber = keygrabber}
 local util         = require( "awful.util"     )
 local awful        = require( "awful"          )
