@@ -2,6 +2,7 @@ local math      = math
 local color     = require( "gears.color" )
 local beautiful = require( "beautiful"   )
 local glib      = require("lgi").GLib
+local cairo        = require( "lgi"            ).cairo
 
 local module = {settings={}}
 
@@ -14,6 +15,30 @@ function module.get_rgb()
     rr,rg,rb = r,g,b
   end
   return rr,rg,rb
+end
+
+function module.arrow_path(cr,width)
+  cr:rel_move_to( 0           , -width/2 )
+  cr:rel_line_to( width/2     , width/2  )
+  cr:rel_line_to( -10         , 0        )
+  cr:rel_line_to( 0           , width/2  )
+  cr:rel_line_to( (-width)+20 , 0        )
+  cr:rel_line_to( 0           , -width/2 )
+  cr:rel_line_to( -10         , 0        )
+  cr:rel_line_to( width/2     , -width/2)
+  cr:close_path()
+end
+
+function module.arrow(width,bg,fg)
+  local img = cairo.ImageSurface(cairo.Format.ARGB32, width, width)
+  local cr = cairo.Context(img)
+  cr:set_source(fg)
+  cr:paint()
+  cr:set_source(bg)
+  cr:move_to(width/2,width/2)
+  module.arrow_path(cr,width)
+  cr:fill()
+  return cairo.Pattern.create_for_surface(img)
 end
 
 function module.draw_round_rect(cr,x,y,w,h,radius)

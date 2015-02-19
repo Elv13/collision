@@ -100,3 +100,6 @@ collision.settings.swap_across_screen = true
 
 The `collision.select_screen(idx)` function allow to select a screen and can be
 assigned to shortcuts.
+
+The `collision.highlight_cursor(timeout)` method will highlight the current mouse
+cursor position.

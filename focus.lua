@@ -17,44 +17,11 @@ local module = {}
 local wiboxes,delta = nil,100
 
 ---------------- Visual -----------------------
-local function gen(item_height)
-  local img = cairo.ImageSurface(cairo.Format.ARGB32, item_height,item_height)
-  local cr = cairo.Context(img)
-  local rad = 10
-  cr:set_source_rgba(0,0,0,0)
-  cr:paint()
-  cr:set_source_rgba(1,1,1,1)
-  cr:arc(rad,rad,rad,0,2*math.pi)
-  cr:arc(item_height-rad,rad,rad,0,2*math.pi)
-  cr:arc(rad,item_height-rad,rad,0,2*math.pi)
-  cr:arc(item_height-rad,item_height-rad,rad,0,2*math.pi)
-  cr:fill()
-  cr:rectangle(0,rad, item_height, item_height-2*rad)
-  cr:rectangle(rad,0, item_height-2*rad, item_height)
-  cr:fill()
-  return img._native
-end
-
-local function constructor(width)
-  local img = cairo.ImageSurface(cairo.Format.ARGB32, width, width)
-  local cr = cairo.Context(img)
-  cr:move_to(0,0)
-  cr:set_source(color(beautiful.fg_normal))
-  cr:paint()
-  cr:set_source(color(beautiful.bg_normal))
-  cr:set_antialias(1)
-  cr:rectangle(0, (width/2), 10, (width/2))
-  cr:rectangle(width-10, (width/2), 10, (width/2))
-  for i=0,(width/2) do
-    cr:rectangle(i, 0, 1, (width/2)-i)
-    cr:rectangle(width-i, 0, 1, (width/2)-i)
-  end
-  cr:fill()
-  return cairo.Pattern.create_for_surface(img)
-end
-
 local function init()
-  local bounding,arrow = gen(75),constructor(55)
+  local img = cairo.ImageSurface(cairo.Format.ARGB32, 75, 75)
+  local cr = cairo.Context(img)
+  
+  local bounding,arrow = col_utils.draw_round_rect(cr,0,0,75,75,10),col_utils.arrow(55,color(beautiful.fg_normal),color(beautiful.bg_normal))
   wiboxes = {}
   for k,v in ipairs({"up","right","down","left","center"}) do
     wiboxes[v] = wibox({})

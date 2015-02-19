@@ -1,13 +1,14 @@
 local capi = {screen=screen,client=client,mouse=mouse, keygrabber = keygrabber}
 local math,table = math,table
-local wibox        = require( "wibox"         )
-local awful        = require( "awful"         )
-local cairo        = require( "lgi"           ).cairo
-local color        = require( "gears.color"   )
-local beautiful    = require( "beautiful"     )
-local surface      = require( "gears.surface" )
-local pango        = require( "lgi"           ).Pango
-local pangocairo   = require( "lgi"           ).PangoCairo
+local wibox        = require( "wibox"           )
+local awful        = require( "awful"           )
+local cairo        = require( "lgi"             ).cairo
+local color        = require( "gears.color"     )
+local beautiful    = require( "beautiful"       )
+local surface      = require( "gears.surface"   )
+local pango        = require( "lgi"             ).Pango
+local pangocairo   = require( "lgi"             ).PangoCairo
+local mouse        = require( "collision.mouse" )
 
 local module = {}
 
@@ -16,6 +17,10 @@ local size  = 100
 local shape = nil
 local pss   = 1
 local opss  = nil
+
+-- Keep an index of the last selection client for each screen
+local last_clients = setmetatable({},{__mode="v"})
+local last_clients_coords = {}
 
 -- Screen order is not always geometrical, sort them
 local function get_first_screen()
@@ -52,6 +57,9 @@ local function create_text(text)
   local cr = cairo.Context(img)
   local selected = text == screens[pss]
   cr:set_source(color(selected and beautiful.bg_urgent or beautiful.bg_alternate or beautiful.bg_normal))
+  if selected then
+    opss = screens_inv[text]
+  end
   cr:paint()
   cr:set_source(color(beautiful.fg_normal))
   cr:set_line_width(6)
@@ -102,8 +110,21 @@ local function init_wiboxes(direction)
 end
 
 local function select_screen(scr_index,move,old_screen)
-  local geom = capi.screen[scr_index].geometry
-  capi.mouse.coords({x=geom.x+geom.width/2,y=geom.y+geom.height/2+55})
+  if scr_index ~= old_screen then
+    local c = last_clients[scr_index]
+    if c and c:isvisible() then
+      local geom = c:geometry()
+      if last_clients_coords[scr_index] and last_clients_coords[scr_index].client == c then
+        capi.mouse.coords(last_clients_coords[scr_index])
+      else
+        capi.mouse.coords({x=geom.x+geom.width/2,y=geom.y+geom.height/2+55})
+      end
+      mouse.highlight()
+    else
+      local geom = capi.screen[scr_index].geometry
+      capi.mouse.coords({x=geom.x+geom.width/2,y=geom.y+geom.height/2+55})
+    end
+  end
 
   if move then
     local t = awful.tag.selected(old_screen)
@@ -117,6 +138,30 @@ local function select_screen(scr_index,move,old_screen)
   end
 
   return scr_index
+end
+
+local function in_rect(c,point)
+  if not c then return true end
+  local geo = c:geometry()
+  return (
+    geo.x < point.x             and geo.y < point.y              and
+    geo.x + geo.width > point.x and geo.y + geo.height > point.y
+  )
+end
+
+local function save_cursor_position()
+  local coords = capi.mouse.coords()
+  local c = capi.client.focus
+  -- Be sure that that mouse in inside of the selected client before doing that
+  if c and in_rect(c,coords) then
+    last_clients_coords[c.screen] = {
+      client = c,
+      x      = coords.x,
+      y      = coords.y,
+    }
+  else
+    last_clients_coords[capi.mouse.screen] = nil
+  end
 end
 
 local function next_screen(ss,dir,move)
@@ -135,8 +180,9 @@ function module.display(_,dir,move)
   if #wiboxes == 0 then
     init_wiboxes(dir)
   end
+  save_cursor_position()
   module.reload(nil,direction)
-  local ss,opss = current_screen(move),pss
+  local ss = current_screen(move)
   next_screen(ss,dir,move)
   module.reload(nil,direction)
 end
@@ -159,6 +205,7 @@ function module.hide()
   for s=1, capi.screen.count() do
     wiboxes[s].visible = false
   end
+  mouse.hide()
 end
 
 local function show()
@@ -168,7 +215,6 @@ local function show()
 end
 
 function module.reload(mod,dir,__,___,move)
-  opss     = pss
   local ss = current_screen(move)
   if dir then
     ss = next_screen(ss,dir:lower(),move or (mod and #mod == 4))
@@ -182,26 +228,33 @@ function module.reload(mod,dir,__,___,move)
 end
 
 function module.select_screen(idx)
+  save_cursor_position()
   select_screen(screens_inv[idx],false)
-  print("ENTER",idx)
   if #wiboxes == 0 then
     init_wiboxes(dir)
   end
 
-  highlight_screen(idx)
+  highlight_screen(screens_inv[idx])
   
   show()
 
   capi.keygrabber.run(function(mod, key, event)
-    print("EVENT",event)
     if event == "release" then
       module.hide()
+      mouse.hide()
       capi.keygrabber.stop()
       return false
     end
     return true
   end)
 end
+
+-- capi.mouse.connect_signal("property::screen",1,function(i)
+--   print("FOO",i)
+-- end)
+capi.client.connect_signal("focus",function(c)
+  last_clients[c.screen] = c
+end)
 
 return module
 -- kate: space-indent on; indent-width 2; replace-tabs on;
