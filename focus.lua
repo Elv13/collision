@@ -137,6 +137,13 @@ local function bydirection(dir, c, swap,max)
             c:raise()
           end
         end
+        if target then
+          -- Geometries have changed by swapping, so refresh.
+          cltbl,geomtbl = max and floating_clients() or client.tiled(),{}
+          for i,cl in ipairs(cltbl) do
+            geomtbl[i] = cl:geometry()
+          end
+        end
       end
       display_wiboxes(cltbl,geomtbl,float,swap,c)
     end
