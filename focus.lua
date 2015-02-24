@@ -105,12 +105,15 @@ local function bydirection(dir, c, swap,max)
         geomtbl[i] = cl:geometry()
       end
       local target = util.get_rectangle_in_direction(dir, geomtbl, c:geometry())
-      -- If we found a client to focus, then do it.
-      if target then
-        if swap ~= true then
+      if swap ~= true then
+        -- If we found a client to focus, then do it.
+        if target then
           capi.client.focus = cltbl[((not cltbl[target] and #cltbl == 1) and 1 or target)]
           capi.client.focus:raise()
-        else
+        end
+      else
+        if target then
+          -- We found a client to swap
           local other = cltbl[((not cltbl[target] and #cltbl == 1) and 1 or target)]
           if other.screen == c.screen or col_utils.settings.swap_across_screen then
             --BUG swap doesn't work if the screen is not the same
@@ -119,6 +122,19 @@ local function bydirection(dir, c, swap,max)
             local t = tag.selected(other.screen) --TODO get index
             c.screen = other.screen
             c:tags({t})
+          end
+        else
+          -- No client to swap, try to find a screen.
+          local screen_geom = {}
+          for i = 1, capi.screen.count() do
+            screen_geom[i] = capi.screen[i].workarea
+          end
+          target = util.get_rectangle_in_direction(dir, screen_geom, c:geometry())
+          if target and target ~= c.screen then
+            local t = tag.selected(target)
+            c.screen = target
+            c:tags({t})
+            c:raise()
           end
         end
       end
