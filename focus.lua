@@ -20,8 +20,10 @@ local wiboxes,delta = nil,100
 local function init()
   local img = cairo.ImageSurface(cairo.Format.ARGB32, 75, 75)
   local cr = cairo.Context(img)
-  
-  local bounding,arrow = col_utils.draw_round_rect(cr,0,0,75,75,10),col_utils.arrow(55,color(beautiful.fg_normal),color(beautiful.bg_normal))
+  col_utils.draw_round_rect(cr,0,0,75,75,10)
+  cr:fill()
+
+  local bounding,arrow = img._native,col_utils.arrow(55,color(beautiful.fg_normal),color(beautiful.bg_normal))
   wiboxes = {}
   for k,v in ipairs({"up","right","down","left","center"}) do
     wiboxes[v] = wibox({})
@@ -47,10 +49,7 @@ local function init()
   wiboxes["center"]:set_bg(beautiful.bg_urgent)
   local img = cairo.ImageSurface(cairo.Format.ARGB32, 75,75)
   local cr = cairo.Context(img)
-  cr:set_source_rgba(0,0,0,0)
-  cr:paint()
-  cr:set_source_rgba(1,1,1,1)
-  cr:arc( 75/2,75/2,75/2,0,2*math.pi  )
+  col_utils.draw_round_rect(cr,0,0,75,75,75/2)
   cr:fill()
   wiboxes["center"].shape_bounding = img._native
 end
