@@ -121,8 +121,8 @@ local function bydirection(dir, c, swap,max)
             c:tags({t})
           end
         end
-        display_wiboxes(cltbl,geomtbl,float,swap,c)
       end
+      display_wiboxes(cltbl,geomtbl,float,swap,c)
     end
   end
 end
