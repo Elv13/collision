@@ -60,7 +60,7 @@ local function display_wiboxes(cltbl,geomtbl,float,swap,c)
     init()
   end
   for k,v in ipairs({"left","right","up","down","center"}) do
-    local next_clients = (not (float and swap)) and cltbl[util.get_rectangle_in_direction(v , geomtbl, capi.client.focus:geometry())] or c
+    local next_clients = (float and swap) and c or cltbl[util.get_rectangle_in_direction(v , geomtbl, capi.client.focus:geometry())]
     if next_clients or k==5 then
       local same, center = capi.client.focus == next_clients,k==5
       local geo = center and capi.client.focus:geometry() or next_clients:geometry()
