@@ -23,7 +23,7 @@ local function init()
   col_utils.draw_round_rect(cr,0,0,75,75,10)
   cr:fill()
 
-  local bounding,arrow = img._native,col_utils.arrow(55,color(beautiful.fg_normal),color(beautiful.bg_normal))
+  local bounding,arrow = img._native,col_utils.arrow(55,10,0,beautiful.bg_normal,beautiful.fg_normal)
   wiboxes = {}
   for k,v in ipairs({"up","right","down","left","center"}) do
     wiboxes[v] = wibox({})
