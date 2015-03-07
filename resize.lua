@@ -154,7 +154,27 @@ function module.mouse_resize(c,corner)
       module.hide()
       return false
     elseif mouse.x ~= curX and mouse.y ~= curY then
-      c:geometry(corners[corner or "tl"](geom,mouse,curX,curY))
+
+      -- Apply the changes
+      local new = corners[corner or "tl"](geom,mouse,curX,curY)
+
+      -- Check for critically low values
+      if new.width < 5 then
+        new.width = 5
+      end
+
+      if new.height < 5 then
+        new.height = 5
+      end
+
+      --Newer awesome version support checking size hints
+      if c.apply_size_hints then
+        local w,h = c:apply_size_hints(new.width,new.height)
+        new.x,new.y,new.width,new.height = new.x - (w-new.width),new.y - (h-new.height),w,h
+        print("AAA",w,h,new.width,new.height,new.x)
+      end
+
+      c:geometry(new)
     end
     return true
   end,"fleur")
