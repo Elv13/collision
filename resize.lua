@@ -171,7 +171,6 @@ function module.mouse_resize(c,corner)
       if c.apply_size_hints then
         local w,h = c:apply_size_hints(new.width,new.height)
         new.x,new.y,new.width,new.height = new.x - (w-new.width),new.y - (h-new.height),w,h
-        print("AAA",w,h,new.width,new.height,new.x)
       end
 
       c:geometry(new)
@@ -180,13 +179,6 @@ function module.mouse_resize(c,corner)
   end,"fleur")
 end
 
--- awful.mouse.client._resize = awful.mouse.client.resize
--- awful.mouse.client.resize = function(c,...)
---   module.display(c)
---   auto_hide = true
---   awful.mouse.client._resize(c,...)
---   module.hide()
--- end
 
 return module
 -- kate: space-indent on; indent-width 2; replace-tabs on;

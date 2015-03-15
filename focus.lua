@@ -54,15 +54,20 @@ local function init()
   wiboxes["center"].shape_bounding = img._native
 end
 
+local function emulate_client(screen)
+  return {is_screen = true, screen=screen, geometry=function() return capi.screen[screen].workarea end}
+end
+
 local function display_wiboxes(cltbl,geomtbl,float,swap,c)
   if not wiboxes then
     init()
   end
+  local fc = capi.client.focus or emulate_client(capi.mouse.screen)
   for k,v in ipairs({"left","right","up","down","center"}) do
-    local next_clients = (float and swap) and c or cltbl[util.get_rectangle_in_direction(v , geomtbl, capi.client.focus:geometry())]
+    local next_clients = (float and swap) and c or cltbl[util.get_rectangle_in_direction(v , geomtbl, fc:geometry())]
     if next_clients or k==5 then
-      local same, center = capi.client.focus == next_clients,k==5
-      local geo = center and capi.client.focus:geometry() or next_clients:geometry()
+      local same, center = fc == next_clients,k==5
+      local geo = center and fc:geometry() or next_clients:geometry()
       wiboxes[v].visible = true
       wiboxes[v].x = (swap and float and (not center)) and (geo.x + (k>2 and (geo.width/2) or 0) + (k==2 and geo.width or 0) - 75/2) or (geo.x + geo.width/2 - 75/2)
       wiboxes[v].y = (swap and float and (not center)) and (geo.y + (k<=2 and geo.height/2 or 0) + (k==4 and geo.height or 0) - 75/2) or (geo.y + geo.height/2 - 75/2)
@@ -91,61 +96,86 @@ local function floating_clients()
 end
 
 local function bydirection(dir, c, swap,max)
-  if c then
-    local float = client.floating.get(c) or alayout.get(c.screen) == alayout.suit.floating
-    -- Move the client if floating, swaping wont work anyway
-    if swap and float then
-      c:geometry((max and float_move_max or float_move)(dir,c))
-      display_wiboxes(nil,nil,float,swap,c)
-    else
-      -- Get all clients rectangle
-      local cltbl,geomtbl = max and floating_clients() or client.tiled(),{}
-      for i,cl in ipairs(cltbl) do
-        geomtbl[i] = cl:geometry()
+  if not c then
+    c = emulate_client(capi.mouse.screen)
+  end
+
+  local float = nil
+
+  if c.is_screen then
+    float = false
+  else
+    float = (client.floating.get(c) or alayout.get(c.screen) == alayout.suit.floating)
+  end
+
+  -- Move the client if floating, swaping wont work anyway
+  if swap and float then
+    c:geometry((max and float_move_max or float_move)(dir,c))
+    display_wiboxes(nil,nil,float,swap,c)
+  else
+    -- Get all clients rectangle
+    local cltbl,geomtbl,scrs = max and floating_clients() or client.tiled(),{},{}
+    for i,cl in ipairs(cltbl) do
+      geomtbl[i] = cl:geometry()
+      scrs[cl.screen or 1] = true
+    end
+
+    -- Add rectangles for empty screens too
+    for i = 1, capi.screen.count() do
+      if not scrs[i] then
+        geomtbl[#geomtbl+1] = capi.screen[i].workarea
+        cltbl[#geomtbl] = emulate_client(i)
       end
-      local target = util.get_rectangle_in_direction(dir, geomtbl, c:geometry())
-      if swap ~= true then
-        -- If we found a client to focus, then do it.
-        if target then
-          capi.client.focus = cltbl[((not cltbl[target] and #cltbl == 1) and 1 or target)]
+    end
+
+    local target = util.get_rectangle_in_direction(dir, geomtbl, c:geometry())
+    if swap ~= true then
+      -- If we found a client to focus, then do it.
+      if target then
+        local cl = cltbl[target]
+        if cl and cl.is_screen then
+          capi.client.focus = nil --TODO Fix upstream fix
+          capi.mouse.screen = capi.screen[cl.screen]
+        else
+          capi.client.focus = cltbl[((not cl and #cltbl == 1) and 1 or target)]
           capi.client.focus:raise()
         end
-      else
-        if target then
-          -- We found a client to swap
-          local other = cltbl[((not cltbl[target] and #cltbl == 1) and 1 or target)]
-          if other.screen == c.screen or col_utils.settings.swap_across_screen then
-            --BUG swap doesn't work if the screen is not the same
-            c:swap(other)
-          else
-            local t = tag.selected(other.screen) --TODO get index
-            c.screen = other.screen
-            c:tags({t})
-          end
+      end
+    else
+      if target then
+        -- We found a client to swap
+        local other = cltbl[((not cltbl[target] and #cltbl == 1) and 1 or target)]
+        if other.screen == c.screen or col_utils.settings.swap_across_screen then
+          --BUG swap doesn't work if the screen is not the same
+          c:swap(other)
         else
-          -- No client to swap, try to find a screen.
-          local screen_geom = {}
-          for i = 1, capi.screen.count() do
-            screen_geom[i] = capi.screen[i].workarea
-          end
-          target = util.get_rectangle_in_direction(dir, screen_geom, c:geometry())
-          if target and target ~= c.screen then
-            local t = tag.selected(target)
-            c.screen = target
-            c:tags({t})
-            c:raise()
-          end
+          local t = tag.selected(other.screen) --TODO get index
+          c.screen = other.screen
+          c:tags({t})
         end
-        if target then
-          -- Geometries have changed by swapping, so refresh.
-          cltbl,geomtbl = max and floating_clients() or client.tiled(),{}
-          for i,cl in ipairs(cltbl) do
-            geomtbl[i] = cl:geometry()
-          end
+      else
+        -- No client to swap, try to find a screen.
+        local screen_geom = {}
+        for i = 1, capi.screen.count() do
+          screen_geom[i] = capi.screen[i].workarea
+        end
+        target = util.get_rectangle_in_direction(dir, screen_geom, c:geometry())
+        if target and target ~= c.screen then
+          local t = tag.selected(target)
+          c.screen = target
+          c:tags({t})
+          c:raise()
         end
       end
-      display_wiboxes(cltbl,geomtbl,float,swap,c)
+      if target then
+        -- Geometries have changed by swapping, so refresh.
+        cltbl,geomtbl = max and floating_clients() or client.tiled(),{}
+        for i,cl in ipairs(cltbl) do
+          geomtbl[i] = cl:geometry()
+        end
+      end
     end
+    display_wiboxes(cltbl,geomtbl,float,swap,c)
   end
 end
 
