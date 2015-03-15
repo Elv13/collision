@@ -15,6 +15,7 @@ local col_utils    = require( "collision.util" )
 
 local module = {}
 local wiboxes,delta = nil,100
+local edge = nil
 
 ---------------- Visual -----------------------
 local function init()
@@ -113,11 +114,36 @@ local function bydirection(dir, c, swap,max)
     c:geometry((max and float_move_max or float_move)(dir,c))
     display_wiboxes(nil,nil,float,swap,c)
   else
+
+    if not edge then
+      local scrs =col_utils.get_ordered_screens()
+      local last_geo =capi.screen[scrs[#scrs]].geometry
+      edge = last_geo.x + last_geo.width
+    end
+
     -- Get all clients rectangle
-    local cltbl,geomtbl,scrs = max and floating_clients() or client.tiled(),{},{}
+    local cltbl,geomtbl,scrs,roundr,roundl = max and floating_clients() or client.tiled(),{},{},{},{}
     for i,cl in ipairs(cltbl) do
-      geomtbl[i] = cl:geometry()
+      local geo = cl:geometry()
+      geomtbl[i] = geo
       scrs[cl.screen or 1] = true
+      if geo.x == 0 then
+        roundr[#roundr+1] = cl
+      elseif geo.x + geo.width >= edge -2 then
+        roundl[#roundl+1] = cl
+      end
+    end
+
+    --Add first client at the end to be able to rotate selection
+    for k,c in ipairs(roundr) do
+      local geo = c:geometry()
+      geomtbl[#geomtbl+1] = {x=edge,width=geo.width,y=geo.y,height=geo.height}
+      cltbl[#geomtbl] = c
+    end
+    for k,c in ipairs(roundl) do
+      local geo = c:geometry()
+      geomtbl[#geomtbl+1] = {x=-geo.width,width=geo.width,y=geo.y,height=geo.height}
+      cltbl[#geomtbl] = c
     end
 
     -- Add rectangles for empty screens too

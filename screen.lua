@@ -9,6 +9,7 @@ local surface      = require( "gears.surface"   )
 local pango        = require( "lgi"             ).Pango
 local pangocairo   = require( "lgi"             ).PangoCairo
 local mouse        = require( "collision.mouse" )
+local util         = require( "collision.util"  )
 
 local module = {}
 
@@ -22,31 +23,7 @@ local opss  = nil
 local last_clients = setmetatable({},{__mode="v"})
 local last_clients_coords = {}
 
--- Screen order is not always geometrical, sort them
-local function get_first_screen()
-  local ret = {}
-  for i=1,capi.screen.count() do
-    local geom = capi.screen[i].geometry
-    if #ret == 0 then
-      ret[1] = i
-    elseif geom.x < capi.screen[ret[1]].geometry.x then
-      table.insert(ret,1,i)
-    else
-      for j=#ret,1,-1 do
-        if geom.x > capi.screen[ret[j]].geometry.x then
-          table.insert(ret,j+1,i)
-          break
-        end
-      end
-    end
-  end
-  return ret
-end
-
-local screens,screens_inv = get_first_screen(),{}
-for k,v in ipairs(screens) do
-  screens_inv[v] = k
-end
+local screens,screens_inv = util.get_ordered_screens()
 
 local function current_screen(focus)
   return (not focus) and capi.mouse.screen or (capi.client.focus and capi.client.focus.screen or capi.mouse.screen)
@@ -112,7 +89,7 @@ end
 local function select_screen(scr_index,move,old_screen)
   if scr_index ~= old_screen then
     local c = last_clients[scr_index]
-    if c and c:isvisible() then
+    if c and pcall(c:isvisible()) and c:isvisible() then
       local geom = c:geometry()
       if last_clients_coords[scr_index] and last_clients_coords[scr_index].client == c then
         capi.mouse.coords(last_clients_coords[scr_index])

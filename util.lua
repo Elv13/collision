@@ -1,3 +1,4 @@
+local capi      = {screen = screen}
 local math      = math
 local color     = require( "gears.color" )
 local beautiful = require( "beautiful"   )
@@ -70,6 +71,36 @@ function module.double_click(callback,delay)
   return function()
     ds,du = refresh_dt(ds,du,callback,delay)
   end
+end
+
+-- Screen order is not always geometrical, sort them
+local screens,screens_inv
+function module.get_ordered_screens()
+  if screens then return screens,screens_inv end
+
+  screens = {}
+  for i=1,capi.screen.count() do
+    local geom = capi.screen[i].geometry
+    if #screens == 0 then
+      screens[1] = i
+    elseif geom.x < capi.screen[screens[1]].geometry.x then
+      table.insert(screens,1,i)
+    else
+      for j=#screens,1,-1 do
+        if geom.x > capi.screen[screens[j]].geometry.x then
+          table.insert(screens,j+1,i)
+          break
+        end
+      end
+    end
+  end
+
+  screens_inv = {}
+  for k,v in ipairs(screens) do
+    screens_inv[v] = k
+  end
+
+  return screens,screens_inv
 end
 
 return module
