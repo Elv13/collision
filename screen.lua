@@ -89,7 +89,11 @@ end
 local function select_screen(scr_index,move,old_screen)
   if scr_index ~= old_screen then
     local c = last_clients[scr_index]
-    if c and pcall(c:isvisible()) and c:isvisible() then
+    if not pcall(c) then
+      last_clients[scr_index] = nil
+      c = nil
+    end
+    if c and c:isvisible() then
       local geom = c:geometry()
       if last_clients_coords[scr_index] and last_clients_coords[scr_index].client == c then
         capi.mouse.coords(last_clients_coords[scr_index])
