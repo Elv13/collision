@@ -89,7 +89,7 @@ end
 local function select_screen(scr_index,move,old_screen)
   if scr_index ~= old_screen then
     local c = last_clients[scr_index]
-    if not pcall(c) then
+    if pcall(c) then
       last_clients[scr_index] = nil
       c = nil
     end

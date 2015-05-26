@@ -82,7 +82,9 @@ function module.highlight()
 end
 
 function module.hide()
-  w.visible = false
+  if w then
+    w.visible = false
+  end
 end
 
 return module
