@@ -178,6 +178,11 @@ local function client_icon(c,width,height)
 
   -- Add icon on top, "solve" the black window issue
   local icon = surface(c.icon)
+
+  if not icon then
+    return img
+  end
+
   local w,h = icon:get_width(),icon:get_height()
   local aspect,aspect_h = width / w,(height) / h
   if aspect > aspect_h then aspect = aspect_h end
