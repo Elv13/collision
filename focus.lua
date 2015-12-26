@@ -70,8 +70,8 @@ local function display_wiboxes(cltbl,geomtbl,float,swap,c)
       local same, center = fc == next_clients,k==5
       local geo = center and fc:geometry() or next_clients:geometry()
       wiboxes[v].visible = true
-      wiboxes[v].x = (swap and float and (not center)) and (geo.x + (k>2 and (geo.width/2) or 0) + (k==2 and geo.width or 0) - 75/2) or (geo.x + geo.width/2 - 75/2)
-      wiboxes[v].y = (swap and float and (not center)) and (geo.y + (k<=2 and geo.height/2 or 0) + (k==4 and geo.height or 0) - 75/2) or (geo.y + geo.height/2 - 75/2)
+      wiboxes[v].x = math.floor((swap and float and (not center)) and (geo.x + (k>2 and (geo.width/2) or 0) + (k==2 and geo.width or 0) - 75/2) or (geo.x + geo.width/2 - 75/2))
+      wiboxes[v].y = math.floor((swap and float and (not center)) and (geo.y + (k<=2 and geo.height/2 or 0) + (k==4 and geo.height or 0) - 75/2) or (geo.y + geo.height/2 - 75/2))
     else
       wiboxes[v].visible = false
     end

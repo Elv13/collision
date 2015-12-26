@@ -60,8 +60,8 @@ local function create_shape_bounding(wa)
   local w = wibox{}
   w.width  = size
   w.height = size
-  w.x=wa.x+wa.width/2-size/2
-  w.y=wa.y+wa.height/2-size/2
+  w.x= math.floor(wa.x+wa.width/2-size/2)
+  w.y= math.floor(wa.y+wa.height/2-size/2)
   w.ontop = true
   if not shape then
     shape    = cairo.ImageSurface(cairo.Format.ARGB32, size, size)

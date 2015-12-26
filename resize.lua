@@ -112,7 +112,7 @@ function module.display(c,toggle)
   end
   for k,v in ipairs(values) do
     local w,pos   = indicators[v],placement_f[v](c:geometry())
-    w.x,w.y,w.visible       = pos.x - 20,pos.y - 20,true
+    w.x,w.y,w.visible       = math.floor(pos.x - 20), math.floor(pos.y - 20),true
   end
 end
 

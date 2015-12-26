@@ -64,7 +64,7 @@ local function draw_shape(s,collection,current_idx,icon_f,y,text_height)
   end
 
   -- Resize the wibox
-  w.x,w.y,w.width,w.height = geo.x,y or (wa.y+wa.height) - margin - height,geo.width,height
+  w.x,w.y,w.width,w.height = math.floor(geo.x),math.floor(y or (wa.y+wa.height) - margin - height),math.floor(geo.width),math.floor(height)
 
   local img = cairo.ImageSurface(cairo.Format.ARGB32, geo.width,geo.height)
   local img3 = cairo.ImageSurface(cairo.Format.ARGB32, geo.width,geo.height)
