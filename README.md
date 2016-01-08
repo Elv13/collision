@@ -25,7 +25,7 @@ Now, open ~/.config/awesome/rc.lua (or copy /etc/xdg/awesome/rc.lua to
  and add this line somewhere in your `rc.lua`:
 
 ```lua
-    local collision = require("collision")()
+    require("collision")()
 ```
 
 It is a very good idea to also change the default `mod4+arrow` shortcut to
@@ -88,6 +88,19 @@ This can be used:
 
 Of course, if the `Vim` keys are used, any other shortcut binded to them have to
 be removed from rc.lua.
+
+# Appearance
+
+Collision appearance can be changed in yout theme using the `collision`
+namespace
+
+## Focus
+
+| Variable              | Description                                           |
+| :-------------------: | ----------------------------------------------------- |
+| collision_bg_focus    | The background of the focus change arrow              |
+| collision_fg_focus    | The foregroung filling color of the arrow             |
+| collision_bg_center   | The focussed client circle background                 |
 
 # Settings
 

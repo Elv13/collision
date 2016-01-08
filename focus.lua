@@ -24,7 +24,11 @@ local function init()
   col_utils.draw_round_rect(cr,0,0,75,75,10)
   cr:fill()
 
-  local bounding,arrow = img._native,col_utils.arrow(55,10,0,beautiful.bg_normal,beautiful.fg_normal)
+  local bounding,arrow = img._native,col_utils.arrow(55,10,0,
+    beautiful.collision_bg_focus or beautiful.bg_normal or "#000000",
+    beautiful.collision_fg_focus or beautiful.fg_normal or "#0000ff"
+  )
+
   wiboxes = {}
   for k,v in ipairs({"up","right","down","left","center"}) do
     wiboxes[v] = wibox({})
@@ -47,7 +51,7 @@ local function init()
       wiboxes[v].shape_bounding = bounding
     end
   end
-  wiboxes["center"]:set_bg(beautiful.bg_urgent)
+  wiboxes["center"]:set_bg(beautiful.collision_bg_center or beautiful.bg_urgent or "#ff0000")
   local img = cairo.ImageSurface(cairo.Format.ARGB32, 75,75)
   local cr = cairo.Context(img)
   col_utils.draw_round_rect(cr,0,0,75,75,75/2)
