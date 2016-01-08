@@ -169,6 +169,8 @@ local function new(k)
     end
     capi.root.keys(awful.util.table.join(capi.root.keys(),unpack(aw)))
   end)
+
+  return module
 end
 
 return setmetatable(module, { __call = function(_, ...) return new(...) end })

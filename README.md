@@ -25,7 +25,7 @@ Now, open ~/.config/awesome/rc.lua (or copy /etc/xdg/awesome/rc.lua to
  and add this line somewhere in your `rc.lua`:
 
 ```lua
-    require("collision")()
+    local collision = require("collision")()
 ```
 
 It is a very good idea to also change the default `mod4+arrow` shortcut to
