@@ -12,6 +12,7 @@ local module = {
   _mouse  = require( "collision.mouse" ),
   settings= col_utils.settings          ,
   util    = col_utils                   ,
+  split   = require( "collision.split" ),
 }
 
 local current_mode = "focus"

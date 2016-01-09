@@ -18,6 +18,14 @@ function module.get_rgb()
   return rr,rg,rb
 end
 
+--- Draw an arrow path. The current context position is the center of the arrow
+-- By default, the arrow is pointing up, use context rotation to get other directions
+--
+-- To get an arrow pointing down:
+-- @usage cr:move_to(width/2, height/2)
+-- cr:rotate(math.pi)
+--
+--
 function module.arrow_path(cr, width, sidesize)
   cr:rel_move_to( 0                   , -width/2 )
   cr:rel_line_to( width/2             , width/2  )
@@ -101,6 +109,26 @@ function module.get_ordered_screens()
   end
 
   return screens,screens_inv
+end
+
+--- Setup the whole thing and call fct(cr, width, height) then apply the shape
+-- fct should not set the source or color
+function module.apply_shape_bounding(c_or_w, fct)
+  local geo = c_or_w:geometry()
+
+  local img = cairo.ImageSurface(cairo.Format.A1, geo.width, geo.height)
+  local cr = cairo.Context(img)
+
+  cr:set_source_rgba(0,0,0,0)
+  cr:paint()
+  cr:set_operator(cairo.Operator.SOURCE)
+  cr:set_source_rgba(1,1,1,1)
+
+  fct(cr, geo.width, geo.height)
+
+  cr:fill()
+
+  c_or_w.shape_bounding = img._native
 end
 
 return module
