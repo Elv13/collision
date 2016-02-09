@@ -117,6 +117,7 @@ assigned to shortcuts.
 The `collision.highlight_cursor(timeout)` method will highlight the current mouse
 cursor position.
 
+Use `collision.mouse.highlight()` and `collision.mouse.hide()`
 # Notes
 
 Using the focus arrows to select empty screens only work in Awesome 3.5.7+

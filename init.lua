@@ -9,7 +9,7 @@ local module = {
   _resize = require( "collision.resize"),
   _max    = require( "collision.max"   ),
   _screen = require( "collision.screen"),
-  _mouse  = require( "collision.mouse" ),
+  mouse   = require( "collision.mouse" ),
   settings= col_utils.settings          ,
   util    = col_utils                   ,
   split   = require( "collision.split" ),
@@ -135,11 +135,11 @@ function module.select_screen(idx)
 end
 
 function module.highlight_cursor(timeout)
-  module._mouse.highlight()
+  module.mouse.highlight()
   if timer then
     local timer = capi.timer({ timeout = timeout }) -- 30 mins
     timer:connect_signal("timeout", function()
-      module._mouse.hide()
+      module.mouse.hide()
       timer:stop()
     end)
     timer:start()

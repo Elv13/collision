@@ -8,6 +8,7 @@ local awful        = require("awful")
 local beautiful    = require("beautiful")
 local color        = require( "gears.color")
 local util         = require( "collision.util"   )
+local shape        = require( "gears.shape" )
 local capi         = { screen = screen, client=client }
 
 local module = {}
@@ -89,7 +90,13 @@ function module.draw(tag,cr,width,height)
   cr:set_line_width(3)
   for c,ll in ipairs({l,l2}) do
     for c,geom in pairs(ll) do
-      util.draw_round_rect(cr,geom.x*ratio*w_stretch+margin,geom.y*ratio+margin,geom.width*ratio*w_stretch-margin*2,geom.height*ratio-margin*2,radius)
+      shape.transform(shape.rounded_rect)
+        : translate(geom.x*ratio*w_stretch+margin, geom.y*ratio+margin) (
+            cr,
+            geom.width*ratio*w_stretch-margin*2,
+            geom.height*ratio-margin*2,
+            radius
+      )
       cr:close_path()
       cr:set_source_rgba(r,g,b,0.7)
       cr:stroke_preserve()

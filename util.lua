@@ -38,6 +38,22 @@ function module.arrow_path(cr, width, sidesize)
   cr:close_path()
 end
 
+function module.arrow_path2(cr, width, height, head_width, shaft_width, shaft_length)
+  local shaft_length = shaft_length or height / 2
+  local shaft_width  = shaft_width  or width  / 2
+  local head_width   = head_width   or width
+  local head_length  = height - shaft_length
+
+  cr:move_to( width/2                     , 0 )
+  cr:rel_line_to( head_width/2                , head_length )
+  cr:rel_line_to( -(head_width-shaft_width)/2 , 0  )
+  cr:rel_line_to( 0                           , shaft_length        )
+  cr:rel_line_to( -shaft_width                , 0 )
+  cr:rel_line_to( 0           , -shaft_length )
+  cr:rel_line_to( -(head_width-shaft_width)/2             , 0 )
+  cr:close_path()
+end
+
 function module.arrow(width, sidesize, margin, bg_color, fg_color)
   local img = cairo.ImageSurface(cairo.Format.ARGB32, width+2*margin, width+2*margin)
   local cr = cairo.Context(img)

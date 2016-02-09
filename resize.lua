@@ -4,10 +4,18 @@ local wibox,color     = require( "wibox" )    , require( "gears.color" )
 local cairo,beautiful = require( "lgi").cairo , require( "beautiful"   )
 local awful           = require("awful")
 local col_utils       = require( "collision.util" )
+local d_resize        = require( "awful.layout.dynamic.resize" )
 local module,indicators,cur_c,auto_hide = {},nil,nil
 
 local values = {"top"     , "top_right"  , "right" ,  "bottom_right" ,
                 "bottom"  , "bottom_left", "left"  ,  "top_left"     }
+
+local invert = {
+  left   = "right" ,
+  right  = "left"  ,
+  top    = "bottom",
+  bottom = "top"
+}
 
 local function gen_shape_bounding(radius)
   local img  = cairo.ImageSurface(cairo.Format.ARGB32, radius,radius)
@@ -98,6 +106,12 @@ end
 
 function module.display(c,toggle)
   local c = c or capi.client.focus
+  if not c then return end
+  if type(c) ~= "client" then
+    print("FAILED", debug.traceback())
+    os.exit()
+  end
+
   if not indicators then
     create_indicators()
   end
@@ -127,6 +141,8 @@ function module.resize(mod,key,event,direction,is_swap,is_max)
       new_geo[r_direction[direction]]  = new_geo[r_direction[direction]]   + r_sign[direction]*100
     end
     c:geometry(new_geo)
+  elseif lay.is_dynamic then
+    d_resize.ajust_geometry(c, 100 * (is_swap and -1 or 1), is_swap and invert[direction] or direction)
   elseif layouts_all[lay] then
     local ret = layouts_all[lay][direction]
     if ret.mwfact then
@@ -147,7 +163,20 @@ local corners = {
 
 -- Resize from the top left corner
 function module.mouse_resize(c,corner)
+  if not c then return end
+
   module.display(c)
+
+  -- Check if the dynamic resize codepath is available
+  local lay = awful.layout.get(c.screen)
+  if lay.is_dynamic then
+    d_resize.generic_mouse_resize_handler(c, nil, nil, nil,{
+      leave_callback = module.hide
+    })
+    return
+  end
+
+  -- Use the internal resizing code
   local geom,curX,curY = c:geometry(),capi.mouse.coords().x,capi.mouse.coords().y
   capi.mousegrabber.run(function(mouse)
     if mouse.buttons[1] == false then

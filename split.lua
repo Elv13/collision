@@ -11,6 +11,7 @@ local utils     = require( "collision.util"       )
 local wibox     = require( "wibox"                )
 local beautiful = require( "beautiful"            )
 local tag       = require( "awful.tag"            )
+local util      = require( "awful.util"           )
 local textbox   = require( "wibox.widget.textbox" )
 local color     = require( "gears.color"          )
 local cairo     = require( "lgi"                  ).cairo
@@ -29,7 +30,12 @@ module.key_map = {
     "a", "s", "d", "f", "g",
     "h", "j", "k", "l", "z",
     "x", "c", "v", "b", "n",
-    "m", "-", "=", ",", "."
+    "m", "-", "=", ",", ".",
+    ";", "'", "[", "]", "/",
+    "!","@","#","$","%","^",
+    "&","*","(",")","+","{",
+    "}",":",'"',"<",">","?",
+    "`", "\\",
 }
 
 local dir_to_angle = {
@@ -38,11 +44,12 @@ local dir_to_angle = {
     top    = math.pi      ,
     bottom = 0            ,
     middle = 0            ,
+    stack  = 0            ,
 }
 
 local dir_to_width_offset_ratio = {
     internal = {
-        left   = -0.5, right  = -0.5, top    = -0.5, bottom = -0.5, middle = -0.5,
+        left   = -0.5, right  = -0.5, top    = -0.5, bottom = -0.5, middle = -0.5, stack = -0.5,
     },
     sides = {
         right   =  -1 , left  =  0  , top    = -0.5, bottom = -0.5, middle = -0.5,
@@ -51,7 +58,7 @@ local dir_to_width_offset_ratio = {
 
 local dir_to_height_offset_ratio = {
     internal = {
-        left   = -0.5, right  = -0.5, top    = -0.5, bottom = -0.5, middle = -0.5,
+        left   = -0.5, right  = -0.5, top    = -0.5, bottom = -0.5, middle = -0.5, stack = -0.5,
     },
     sides = {
         left   = -0.5, right  = -0.5, top    =  0  , bottom = -1  , middle = -0.5,
@@ -59,7 +66,7 @@ local dir_to_height_offset_ratio = {
 }
 
 local dir_to_size = {
-    left   = 60, right  = 60, top    = 60, bottom = 60, middle = 50,
+    left   = 60, right  = 60, top    = 60, bottom = 60, middle = 50, stack = 50,
 }
 
 local type_to_size_ratio = {
@@ -75,14 +82,26 @@ local function internal_rect_pattern(size, direction)
     cr:set_source(color(beautiful.collision_bg_splitter or beautiful.bg_normal or "#0000ff"))
     cr:paint()
 
+    local fg = color(beautiful.collision_fg_splitter or beautiful.fg_normal or "#ffffff")
+    local s,r,g,b,a = fg:get_rgba()
+    cr:set_source_rgba(r,g,b,0.4)
+
+    -- This one is different
+    if direction == "stack" then
+        cr:rectangle(3, 3, size - 12, size - 12)
+        cr:stroke()
+        cr:rectangle(9, 9, size - 12, size - 12)
+        cr:stroke_preserve()
+        cr:set_source_rgba(r,g,b,0.2)
+        cr:fill()
+        return cairo.Pattern.create_for_surface(img)
+    end
+
     cr:translate(size/2,size/2)
     cr:rotate(dir_to_angle[direction])
     cr:translate(-size/2,-size/2)
 
-    local fg = color(beautiful.collision_fg_splitter or beautiful.fg_normal or "#ffffff")
-    local s,r,g,b,a = fg:get_rgba()
 
-    cr:set_source_rgba(r,g,b,0.4)
     cr:rectangle(3, 3, size-6, size/2-6)
     cr:stroke()
     cr:rectangle(3, size/2+3, size-6, size/2-6)
@@ -120,14 +139,7 @@ local function add_splitter(context, args)
     local bg = beautiful.collision_bg_splitter or beautiful.bg_alternate or beautiful.bg_normal or "#0000ff"
     local width = size * #points
 
-    local w = wibox {
-        x      = math.ceil(args.x + dir_to_width_offset_ratio [s_type][direction]*width),
-        y      = math.ceil(args.y + dir_to_height_offset_ratio[s_type][direction]*size),
-        width  = width,
-        height = size,
-        ontop  = true,
-        bg     = bg  ,
-    }
+    local top_level_l = wibox.layout.flex.vertical()
 
     local l = wibox.layout.flex.horizontal()
 
@@ -142,7 +154,7 @@ local function add_splitter(context, args)
 
         local tb = textbox()
 
-        tb:set_markup("<b>".. shortcut .."</b>")
+        tb:set_markup("<b>".. util.quote_pattern(shortcut) .."</b>")
         tb:set_valign "middle"
         tb:set_align  "center"
 
@@ -153,7 +165,31 @@ local function add_splitter(context, args)
         context.hooks[shortcut] = point
     end
 
-    w:set_widget(l)
+    local height = size
+
+    if args.label then
+        local tb = wibox.widget.textbox()
+        tb:set_align("center")
+        tb:set_text(args.label)
+        tb:set_wrap("mode")
+        height = height + tb:get_height_for_width(width)
+
+        top_level_l:add(tb)
+    end
+
+    top_level_l:add(l)
+
+    -- Create a wibox
+    local w = wibox {
+        x      = math.ceil(args.x + dir_to_width_offset_ratio [s_type][direction]*width),
+        y      = math.ceil(args.y + dir_to_height_offset_ratio[s_type][direction]*size),
+        width  = width,
+        height = height,
+        ontop  = true,
+        bg     = bg  ,
+    }
+
+    w:set_widget(top_level_l)
 
     utils.apply_shape_bounding(w, function(cr) type_to_shape[s_type](cr, w.width, w.height, direction) end)
 
@@ -185,6 +221,7 @@ local function drill(context, root, source)
 
             if points then
                 for k, point in ipairs(points) do
+                    print(#points)
                     add_splitter(context, point)
                 end
             end
@@ -211,7 +248,9 @@ local function find_split_points(context)
                 if layout.hierarchy then
                     local wa = layout.param.workarea
                     context.add_x, context.add_y = wa.x, wa.y
-                    if drill(context, layout.hierarchy, nil) then
+                    local source = drill(context, layout.hierarchy, nil)
+                    if source then
+                        print("\n\nGET", layout.hierarchy, layout.hierarchy:get_widget())
                         context.source_root = layout.hierarchy:get_widget()
                     end
                 end
@@ -232,12 +271,12 @@ end
 local function start_keygrabber(context)
     capi.keygrabber.run(function(mod, key, event)
         local hook = context.hooks[key]
-
+print("\n\nKEY", key, hook)
         if hook and hook.callback and event == "press" then
             context.hooks[key]:callback(context)
         end
 
-        if event == "press" then
+        if event == "press" and not (key == "Shift_Lt" or key == "Shift_R") then
             hide(context)
             capi.keygrabber.stop()
         end

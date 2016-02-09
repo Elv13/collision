@@ -3,6 +3,8 @@ local capi = { client = client , mouse      = mouse     ,
 
 local setmetatable = setmetatable
 local ipairs       = ipairs
+local surface      = require( "gears.surface"  )
+local shape        = require( "gears.shape"    )
 local util         = require( "awful.util"     )
 local client       = require( "awful.client"   )
 local tag          = require( "awful.tag"      )
@@ -19,16 +21,6 @@ local edge = nil
 
 ---------------- Visual -----------------------
 local function init()
-  local img = cairo.ImageSurface(cairo.Format.ARGB32, 75, 75)
-  local cr = cairo.Context(img)
-  col_utils.draw_round_rect(cr,0,0,75,75,10)
-  cr:fill()
-
-  local bounding,arrow = img._native,col_utils.arrow(55,10,0,
-    beautiful.collision_bg_focus or beautiful.bg_normal or "#000000",
-    beautiful.collision_fg_focus or beautiful.fg_normal or "#0000ff"
-  )
-
   wiboxes = {}
   for k,v in ipairs({"up","right","down","left","center"}) do
     wiboxes[v] = wibox({})
@@ -37,26 +29,24 @@ local function init()
     wiboxes[v].ontop  = true
     if v ~= "center" then
       local ib,m = wibox.widget.imagebox(),wibox.layout.margin()
-      local img = cairo.ImageSurface(cairo.Format.ARGB32, 55, 55)
-      local cr = cairo.Context(img)
-      cr:translate(55/2,55/2)
-      cr:rotate((k-1)*(2*math.pi)/4)
-      cr:translate(-(55/2),-(55/2))
-      cr:set_source(arrow)
-      cr:paint()
-      ib:set_image(img)
+
+      ib:set_image(surface.load_from_shape(55, 55,
+        shape.transform(col_utils.arrow_path2)
+          : rotate_at(55/2, 55/2, (k-1)*(2*math.pi)/4),
+        beautiful.collision_fg_focus or beautiful.fg_normal or "#0000ff",
+        nil , 55, 55-20
+      ))
+
       m:set_margins(10)
       m:set_widget(ib)
       wiboxes[v]:set_widget(m)
-      wiboxes[v].shape_bounding = bounding
+      surface.apply_shape_bounding(wiboxes[v], shape.rounded_rect, 10)
     end
   end
   wiboxes["center"]:set_bg(beautiful.collision_bg_center or beautiful.bg_urgent or "#ff0000")
-  local img = cairo.ImageSurface(cairo.Format.ARGB32, 75,75)
-  local cr = cairo.Context(img)
-  col_utils.draw_round_rect(cr,0,0,75,75,75/2)
-  cr:fill()
-  wiboxes["center"].shape_bounding = img._native
+
+  surface.apply_shape_bounding(wiboxes["center"], shape.rounded_rect, 37.5)
+
 end
 
 local function emulate_client(screen)
