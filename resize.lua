@@ -4,7 +4,10 @@ local wibox,color     = require( "wibox" )    , require( "gears.color" )
 local cairo,beautiful = require( "lgi").cairo , require( "beautiful"   )
 local awful           = require("awful")
 local col_utils       = require( "collision.util" )
-local d_resize        = require( "awful.layout.dynamic.resize" )
+local d_resize        = nil
+
+-- This module is optional
+pcall(function() d_resize = require( "awful.layout.dynamic.resize" ) end)
 local module,indicators,cur_c,auto_hide = {},nil,nil
 
 local values = {"top"     , "top_right"  , "right" ,  "bottom_right" ,
@@ -30,8 +33,8 @@ end
 
 local function create_indicators()
   indicators           = {}
-  local arr            = col_utils.arrow(20, 7, 10, beautiful.bg_alternate, beautiful.fg_normal )
-  local arr_focus      = col_utils.arrow(20, 7, 10, beautiful.fg_normal, beautiful.bg_normal )
+  local arr            = col_utils.arrow(20, 7, 10, beautiful.bg_alternate or "#ff0000", beautiful.fg_normal or "#0000ff")
+  local arr_focus      = col_utils.arrow(20, 7, 10, beautiful.fg_normal or "#ff0000", beautiful.bg_normal or "#0000ff")
   local angle          = 0
   local shape_bounding = gen_shape_bounding(40)
   for k,v in ipairs(values) do
@@ -50,7 +53,7 @@ local function create_indicators()
     angle = angle + (2*math.pi)/8
     w:set_widget(ib)
     w.shape_bounding = shape_bounding
-    w:set_bg(beautiful.bg_alternate)
+    w:set_bg(beautiful.bg_alternate or "#ff0000")
     w:connect_signal("mouse::enter",function() ib:set_image(arr_rot_focus) end)
     w:connect_signal("mouse::leave",function()
       ib:set_image(arr_rot)
@@ -105,11 +108,9 @@ function module.hide()
 end
 
 function module.display(c,toggle)
-  local c = c or capi.client.focus
-  if not c then return end
-  if type(c) ~= "client" then
-    print("FAILED", debug.traceback())
-    os.exit()
+  if type(c) ~= "client" then --HACK
+    c = capi.client.focus
+    if not c then return end
   end
 
   if not indicators then
