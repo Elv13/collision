@@ -221,7 +221,6 @@ local function drill(context, root, source)
 
             if points then
                 for k, point in ipairs(points) do
-                    print(#points)
                     add_splitter(context, point)
                 end
             end
@@ -250,7 +249,6 @@ local function find_split_points(context)
                     context.add_x, context.add_y = wa.x, wa.y
                     local source = drill(context, layout.hierarchy, nil)
                     if source then
-                        print("\n\nGET", layout.hierarchy, layout.hierarchy:get_widget())
                         context.source_root = layout.hierarchy:get_widget()
                     end
                 end
@@ -271,7 +269,6 @@ end
 local function start_keygrabber(context)
     capi.keygrabber.run(function(mod, key, event)
         local hook = context.hooks[key]
-print("\n\nKEY", key, hook)
         if hook and hook.callback and event == "press" then
             context.hooks[key]:callback(context)
         end

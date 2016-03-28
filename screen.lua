@@ -148,6 +148,10 @@ end
 local function next_screen(ss,dir,move)
   local scr_index = screens_inv[ss]
 
+  if type(scr_index) == "screen" then
+    scr_index = scr_index.index
+  end
+
   if dir == "left" then
     scr_index = scr_index == 1 and #screens or scr_index - 1
   elseif dir == "right" then
