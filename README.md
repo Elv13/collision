@@ -1,6 +1,8 @@
 Collision window navigation module for AwesomeWM
 ================================================
 
+**Warning:** If you are using the git-master version of Awesome, it is recommended to use the "dynamic" branch. It is also possible to try the `upstream_dynamic_complete` branch of my `awesome-1` repository to try Awesome tabs and dynamic layout support. Please report any bugs.
+
 This module add some visual indicators for common window management operations.
 It is now easier to know the impact of a given command as a visual queue will
 be printed on the screen. Collision has 3 modes:
