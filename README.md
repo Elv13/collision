@@ -96,11 +96,18 @@ namespace
 
 ## Focus
 
-| Variable              | Description                                           |
-| :-------------------: | ----------------------------------------------------- |
-| collision_bg_focus    | The background of the focus change arrow              |
-| collision_fg_focus    | The foregroung filling color of the arrow             |
-| collision_bg_center   | The focussed client circle background                 |
+| Variable                      | Description                                            |
+| :---------------------------: | ------------------------------------------------------ |
+| collision_bg_focus            | The background of the focus change arrow               |
+| collision_fg_focus            | The foregroung filling color of the arrow              |
+| collision_bg_center           | The focussed client circle background                  |
+| collision_resize_width        | The size of the resize handles                         |
+| collision_resize_shape        | The gears.shape used for the resize handle             |
+| collision_resize_border_width | The resize handles border width                        |
+| collision_resize_border_color | The resize handles border colors                       |
+| collision_resize_padding      | The resize handles padding between the boder and arrow |
+| collision_resize_bg           | The resize handles background color                    |
+| collision_resize_fg           | The resize handles arrow color                         |
 
 # Settings
 
