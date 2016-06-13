@@ -14,6 +14,8 @@ local cairo        = require( "lgi"            ).cairo
 local beautiful    = require( "beautiful"      )
 local color        = require( "gears.color"    )
 local col_utils    = require( "collision.util" )
+local grect        = require( "gears.geometry" ).rectangle
+local placement    = require( "awful.placement")
 
 local module = {}
 local wiboxes,delta = nil,100
@@ -21,32 +23,51 @@ local edge = nil
 
 ---------------- Visual -----------------------
 local function init()
-  wiboxes = {}
-  for k,v in ipairs({"up","right","down","left","center"}) do
-    wiboxes[v] = wibox({})
-    wiboxes[v].height = 75
-    wiboxes[v].width  = 75
-    wiboxes[v].ontop  = true
-    if v ~= "center" then
-      local ib,m = wibox.widget.imagebox(),wibox.layout.margin()
+    wiboxes = {}
 
-      ib:set_image(surface.load_from_shape(55, 55,
-        shape.transform(col_utils.arrow_path2)
-          : rotate_at(55/2, 55/2, (k-1)*(2*math.pi)/4),
-        beautiful.collision_fg_focus or beautiful.fg_normal or "#0000ff",
-        nil , 55, 55-20
-      ))
+    local s        = beautiful.collision_focus_shape or shape.rounded_rect
+    local bw       = beautiful.collision_focus_border_width
+    local bc       = beautiful.collision_focus_border_color
+    local padding  = beautiful.collision_focus_padding or 7
+    local bg       = beautiful.collision_focus_bg or beautiful.bg_alternate or "#ff0000"
+    local fg       = beautiful.collision_focus_fg or beautiful.fg_normal    or "#0000ff"
+    local bg_focus = beautiful.collision_focus_bg_center or beautiful.bg_urgent or "#ff0000"
 
-      m:set_margins(10)
-      m:set_widget(ib)
-      wiboxes[v]:set_widget(m)
-      surface.apply_shape_bounding(wiboxes[v], shape.rounded_rect, 10)
+    for k,v in ipairs({"up","right","down","left","center"}) do
+        wiboxes[v] = wibox {
+            height = 75,
+            width  = 75,
+            ontop  = true
+        }
+
+        local r_shape = v == "center" and shape.circle or s
+        local r_bg    = v == "center" and bg_focus    or bg
+
+        wiboxes[v]:setup {
+            v ~= "center" and {
+                {
+                    {
+                        widget = wibox.widget.imagebox
+                    },
+                    shape  = shape.transform(col_utils.arrow_path2)
+                                : rotate_at(55/2, 55/2, (k-1)*(2*math.pi)/4),
+                    bg     = fg,
+                    widget = wibox.container.background
+                },
+                margins = padding,
+                widget  = wibox.container.margin,
+            } or {
+                widget = wibox.widget.imagebox
+            },
+            bg                 = r_bg,
+            shape              = r_shape,
+            shape_border_width = bw,
+            shape_border_color = bc,
+            widget             = wibox.container.background
+        }
+
+        surface.apply_shape_bounding(wiboxes[v], r_shape)
     end
-  end
-  wiboxes["center"]:set_bg(beautiful.collision_bg_center or beautiful.bg_urgent or "#ff0000")
-
-  surface.apply_shape_bounding(wiboxes["center"], shape.rounded_rect, 37.5)
-
 end
 
 local function emulate_client(screen)
@@ -59,13 +80,11 @@ local function display_wiboxes(cltbl,geomtbl,float,swap,c)
   end
   local fc = capi.client.focus or emulate_client(capi.mouse.screen)
   for k,v in ipairs({"left","right","up","down","center"}) do
-    local next_clients = (float and swap) and c or cltbl[util.get_rectangle_in_direction(v , geomtbl, fc:geometry())]
+    local next_clients = (float and swap) and c or cltbl[grect.get_in_direction(v , geomtbl, fc:geometry())]
     if next_clients or k==5 then
-      local same, center = fc == next_clients,k==5
-      local geo = center and fc:geometry() or next_clients:geometry()
+      local parent = k==5 and fc or next_clients
       wiboxes[v].visible = true
-      wiboxes[v].x = math.floor((swap and float and (not center)) and (geo.x + (k>2 and (geo.width/2) or 0) + (k==2 and geo.width or 0) - 75/2) or (geo.x + geo.width/2 - 75/2))
-      wiboxes[v].y = math.floor((swap and float and (not center)) and (geo.y + (k<=2 and geo.height/2 or 0) + (k==4 and geo.height or 0) - 75/2) or (geo.y + geo.height/2 - 75/2))
+      placement.centered(wiboxes[v], {parent = parent})
     else
       wiboxes[v].visible = false
     end
@@ -84,7 +103,7 @@ end
 
 local function floating_clients()
   local ret = {}
-  for v in util.table.iterate(client.visible(),function(c) return client.floating.get(c) end) do
+  for v in util.table.iterate(client.visible(),function(c) return c.floating end) do
     ret[#ret+1] = v
   end
   return ret
@@ -100,7 +119,7 @@ local function bydirection(dir, c, swap,max)
   if c.is_screen then
     float = false
   else
-    float = (client.floating.get(c) or alayout.get(c.screen) == alayout.suit.floating)
+    float = (c.floating or alayout.get(c.screen) == alayout.suit.floating)
   end
 
   -- Move the client if floating, swaping wont work anyway
@@ -148,7 +167,7 @@ local function bydirection(dir, c, swap,max)
       end
     end
 
-    local target = util.get_rectangle_in_direction(dir, geomtbl, c:geometry())
+    local target = grect.get_in_direction(dir, geomtbl, c:geometry())
     if swap ~= true then
       -- If we found a client to focus, then do it.
       if target then
@@ -173,7 +192,7 @@ local function bydirection(dir, c, swap,max)
           --BUG swap doesn't work if the screen is not the same
           c:swap(other)
         else
-          local t = tag.selected(other.screen) --TODO get index
+          local t = other.screen.selected_tag --TODO get index
           c.screen = other.screen
           c:tags({t})
         end
@@ -183,9 +202,9 @@ local function bydirection(dir, c, swap,max)
         for i = 1, capi.screen.count() do
           screen_geom[i] = capi.screen[i].workarea
         end
-        target = util.get_rectangle_in_direction(dir, screen_geom, c:geometry())
+        target = grect.get_in_direction(dir, screen_geom, c:geometry())
         if target and target ~= c.screen then
-          local t = tag.selected(target)
+          local t = target.selected_tag
           c.screen = target
           c:tags({t})
           c:raise()
@@ -227,7 +246,7 @@ function module.display(mod,key,event,direction,is_swap,is_max)
   -- If there is still no accessible clients, there is nothing to display
   if not c then return end
 
-  display_wiboxes(cltbl,geomtbl,client.floating.get(c) or alayout.get(c.screen) == alayout.suit.floating,is_swap,c)
+  display_wiboxes(cltbl,geomtbl,c.floating or alayout.get(c.screen) == alayout.suit.floating,is_swap,c)
 end
 
 function module._quit()
@@ -238,4 +257,4 @@ function module._quit()
 end
 
 return setmetatable(module, { __call = function(_, ...) return new(...) end })
--- kate: space-indent on; indent-width 2; replace-tabs on;
+-- kate: space-indent on; indent-width 4; replace-tabs on;

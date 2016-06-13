@@ -108,6 +108,13 @@ namespace
 | collision_resize_padding      | The resize handles padding between the boder and arrow |
 | collision_resize_bg           | The resize handles background color                    |
 | collision_resize_fg           | The resize handles arrow color                         |
+| collision_focus_shape         |                                                        |
+| collision_focus_border_width  |                                                        |
+| collision_focus_border_color  |                                                        |
+| collision_focus_padding       |                                                        |
+| collision_focus_bg            |                                                        |
+| collision_focus_fg            |                                                        |
+| collision_focus_bg_center     |                                                        |
 
 # Settings
 
