@@ -87,7 +87,7 @@ local function init_wiboxes(direction)
 end
 
 local function select_screen(scr_index,move,old_screen)
-  if scr_index ~= old_screen then
+  if capi.screen[scr_index] ~= capi.screen[old_screen] then
     local c = last_clients[scr_index]
     if pcall(c) then
       last_clients[scr_index] = nil
@@ -108,8 +108,8 @@ local function select_screen(scr_index,move,old_screen)
   end
 
   if move then
-    local t = awful.tag.selected(old_screen)
-    awful.tag.setscreen(t,scr_index)
+    local t = capi.screen[old_screen].selected_tag
+    t.screen = scr_index
     awful.tag.viewonly(t)
   else
     local c = awful.mouse.client_under_pointer()
@@ -146,7 +146,7 @@ local function save_cursor_position()
 end
 
 local function next_screen(ss,dir,move)
-  local scr_index = screens_inv[ss]
+  local scr_index = capi.screen[screens_inv[ss]].index
 
   if type(scr_index) == "screen" then
     scr_index = scr_index.index

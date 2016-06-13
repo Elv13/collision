@@ -41,13 +41,13 @@ end
 
 function module.get_geometry(tag)
   local cls,results,flt = {},setmetatable({},{__mode="k"}),{}
-  local s = awful.tag.getscreen(tag)
+  local s = tag.screen
   local l = awful.tag.getproperty(tag,"layout")
   local focus,focus_wrap = capi.client.focus,nil
   for k,c in ipairs (tag:clients()) do
     -- Handle floating client separately
     if not c.minimized then
-      local floating = awful.client.floating.get(c)
+      local floating = c.floating
       if (not floating) and (not l ==  awful.layout.suit.floating) then
         cls[#cls+1] = gen_cls(c,results)
         if c == focus then
@@ -82,7 +82,7 @@ end
 function module.draw(tag,cr,width,height)
   local worked = false
   local l,l2 = module.get_geometry(tag)
-  local s = awful.tag.getscreen(tag)
+  local s = tag.screen
   local scr_geo = capi.screen[s or 1].workarea
   local ratio = height/scr_geo.height
   local w_stretch = width/(scr_geo.width*ratio)

@@ -233,7 +233,7 @@ local function tag_icon(t,width,height)
   local has_layout = layout.draw(t,cr,width,height)
 
   -- Create a monochrome representation of the icon
-  local icon_orig = surface(awful.tag.geticon(t))
+  local icon_orig = surface(t.icon)
     if icon_orig then
       local icon = cairo.ImageSurface(cairo.Format.ARGB32, icon_orig:get_width(), icon_orig:get_height())
       local cr2 = cairo.Context(icon)
@@ -261,14 +261,14 @@ local function change_tag(s,direction,is_swap)
     awful.tag[direction == "left" and "viewprev" or "viewnext"](s)
   else
     -- Move the tag
-    local t = awful.tag.selected(s)
-    local cur_idx,count = awful.tag.getidx(t),#awful.tag.gettags(s)
+    local t = capi.screen[s].selected_tag
+    local cur_idx,count = awful.tag.getidx(t),#capi.screen[s].tags
     cur_idx = cur_idx + (direction == "left" and -1 or 1)
     cur_idx = cur_idx == 0 and count or cur_idx > count and 1 or cur_idx
     awful.tag.move(cur_idx,t)
   end
-  local tags = awful.tag.gettags(s)
-  local fk = awful.util.table.hasitem(tags,awful.tag.selected(s))
+  local tags = capi.screen[s].tags
+  local fk = awful.util.table.hasitem(tags,capi.screen[s].selected_tag)
   draw_shape(s,tags,fk,tag_icon,capi.screen[s].workarea.y + 15,20)
 end
 
