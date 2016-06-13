@@ -10,6 +10,7 @@ local capi = {
 local utils     = require( "collision.util"       )
 local wibox     = require( "wibox"                )
 local beautiful = require( "beautiful"            )
+local placement = require( "awful.placement"      )
 local tag       = require( "awful.tag"            )
 local util      = require( "awful.util"           )
 local textbox   = require( "wibox.widget.textbox" )
@@ -39,10 +40,10 @@ module.key_map = {
 }
 
 local dir_to_angle = {
-    right  = math.pi * 1.5,
-    left   = math.pi * 0.5,
-    top    = math.pi      ,
-    bottom = 0            ,
+    left   = math.pi * 1.5,
+    right  = math.pi * 0.5,
+    bottom = math.pi      ,
+    top    = 0            ,
     middle = 0            ,
     stack  = 0            ,
 }
@@ -52,7 +53,7 @@ local dir_to_width_offset_ratio = {
         left   = -0.5, right  = -0.5, top    = -0.5, bottom = -0.5, middle = -0.5, stack = -0.5,
     },
     sides = {
-        right   =  -1 , left  =  0  , top    = -0.5, bottom = -0.5, middle = -0.5,
+        left   =  -1 , right  =  0  , top    = -0.5, bottom = -0.5, middle = -0.5,
     }
 }
 
@@ -147,7 +148,7 @@ local function add_splitter(context, args)
         context.count = context.count + 1
         local dir = point.direction or direction
 
-        local b = wibox.widget.background()
+        local b = wibox.container.background()
         b:set_bg(type_to_bg[s_type] and type_to_bg[s_type](size, dir))
 
         local shortcut = module.key_map[context.count]
@@ -181,13 +182,17 @@ local function add_splitter(context, args)
 
     -- Create a wibox
     local w = wibox {
-        x      = math.ceil(args.x + dir_to_width_offset_ratio [s_type][direction]*width),
-        y      = math.ceil(args.y + dir_to_height_offset_ratio[s_type][direction]*size),
+--         x      = math.ceil(args.x + dir_to_width_offset_ratio [s_type][direction]*width),
+--         y      = math.ceil(args.y + dir_to_height_offset_ratio[s_type][direction]*size),
         width  = width,
         height = height,
         ontop  = true,
         bg     = bg  ,
     }
+
+    if placement[args.position] then
+        placement[args.position](w, args)
+    end
 
     w:set_widget(top_level_l)
 
@@ -240,7 +245,7 @@ end
 local function find_split_points(context)
 
     for s = 1, capi.screen.count() do
-        local t = tag.selected(s)
+        local t = capi.screen[s].selected_tag
         if t then
             local layout = tag.getproperty(t, "layout")
             if layout and layout.is_dynamic then
