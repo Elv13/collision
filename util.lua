@@ -106,13 +106,13 @@ function module.get_ordered_screens()
   for i=1,capi.screen.count() do
     local geom = capi.screen[i].geometry
     if #screens == 0 then
-      screens[1] = i
+      screens[1] = capi.screen[i]
     elseif geom.x < capi.screen[screens[1]].geometry.x then
-      table.insert(screens,1,i)
+      table.insert(screens,1,capi.screen[i])
     else
       for j=#screens,1,-1 do
         if geom.x > capi.screen[screens[j]].geometry.x then
-          table.insert(screens,j+1,i)
+          table.insert(screens,j+1,capi.screen[i])
           break
         end
       end

@@ -115,6 +115,14 @@ namespace
 | collision_focus_bg            |                                                        |
 | collision_focus_fg            |                                                        |
 | collision_focus_bg_center     |                                                        |
+| collision_screen_shape        |                                                        |
+| collision_screen_border_width |                                                        |
+| collision_screen_border_color |                                                        |
+| collision_screen_padding      |                                                        |
+| collision_screen_bg           |                                                        |
+| collision_screen_fg           |                                                        |
+| collision_screen_bg_focus     |                                                        |
+| collision_screen_fg_focus     |                                                        |
 
 # Settings
 
