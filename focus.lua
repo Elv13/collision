@@ -139,7 +139,7 @@ local function bydirection(dir, c, swap,max)
     for i,cl in ipairs(cltbl) do
       local geo = cl:geometry()
       geomtbl[i] = geo
-      scrs[cl.screen or 1] = true
+      scrs[capi.screen[cl.screen or 1]] = true
       if geo.x == 0 then
         roundr[#roundr+1] = cl
       elseif geo.x + geo.width >= edge -2 then
@@ -161,7 +161,7 @@ local function bydirection(dir, c, swap,max)
 
     -- Add rectangles for empty screens too
     for i = 1, capi.screen.count() do
-      if not scrs[i] then
+      if not scrs[capi.screen[i]] then
         geomtbl[#geomtbl+1] = capi.screen[i].workarea
         cltbl[#geomtbl] = emulate_client(i)
       end
@@ -179,7 +179,7 @@ local function bydirection(dir, c, swap,max)
           local old_src = capi.client.focus and capi.client.focus.screen
           capi.client.focus = cltbl[((not cl and #cltbl == 1) and 1 or target)]
           capi.client.focus:raise()
-          if old_src and capi.client.focus.screen ~= old_src then
+          if old_src and capi.client.focus.screen ~= capi.screen[old_src] then
             capi.mouse.coords(capi.client.focus:geometry())
           end
         end
@@ -188,12 +188,12 @@ local function bydirection(dir, c, swap,max)
       if target then
         -- We found a client to swap
         local other = cltbl[((not cltbl[target] and #cltbl == 1) and 1 or target)]
-        if other.screen == c.screen or col_utils.settings.swap_across_screen then
+        if capi.screen[other.screen] == capi.screen[c.screen] or col_utils.settings.swap_across_screen then
           --BUG swap doesn't work if the screen is not the same
           c:swap(other)
         else
-          local t = other.screen.selected_tag --TODO get index
-          c.screen = other.screen
+          local t  = capi.screen[other.screen].selected_tag --TODO get index
+          c.screen = capi.screen[ other.screen]
           c:tags({t})
         end
       else
