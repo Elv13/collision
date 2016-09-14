@@ -127,6 +127,13 @@ function module.get_ordered_screens()
   return screens,screens_inv
 end
 
+capi.screen.connect_signal("added", function()
+  screens,screens_inv = nil, nil
+end)
+capi.screen.connect_signal("removed", function()
+  screens,screens_inv = nil, nil
+end)
+
 --- Setup the whole thing and call fct(cr, width, height) then apply the shape
 -- fct should not set the source or color
 function module.apply_shape_bounding(c_or_w, fct)
