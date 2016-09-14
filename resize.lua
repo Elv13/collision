@@ -81,7 +81,11 @@ local function create_indicators()
 end
 
 function module.hide()
+    if not indicators then return end
+
     for k,v in ipairs(values) do indicators[v].visible = false end
+
+    if not cur_c then return end
 
     cur_c:disconnect_signal("property::geometry", module.display)
     cur_c = nil
