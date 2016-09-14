@@ -265,7 +265,7 @@ local function change_tag(s,direction,is_swap)
     local cur_idx,count = awful.tag.getidx(t),#capi.screen[s].tags
     cur_idx = cur_idx + (direction == "left" and -1 or 1)
     cur_idx = cur_idx == 0 and count or cur_idx > count and 1 or cur_idx
-    awful.tag.move(cur_idx,t)
+    t.index = cur_idx
   end
   local tags = capi.screen[s].tags
   local fk = awful.util.table.hasitem(tags,capi.screen[s].selected_tag)
