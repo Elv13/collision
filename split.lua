@@ -16,6 +16,7 @@ local util      = require( "awful.util"           )
 local textbox   = require( "wibox.widget.textbox" )
 local color     = require( "gears.color"          )
 local cairo     = require( "lgi"                  ).cairo
+local shape     = require( "gears.shape"          )
 
 local module = {}
 
@@ -33,10 +34,10 @@ module.key_map = {
     "x", "c", "v", "b", "n",
     "m", "-", "=", ",", ".",
     ";", "'", "[", "]", "/",
-    "!","@","#","$","%","^",
-    "&","*","(",")","+","{",
-    "}",":",'"',"<",">","?",
-    "`", "\\",
+    "!", "@", "#", "$", "%",
+    "^", "&", "*", "(", ")",
+    "+", "{", "}", ":", '"',
+    "<", ">", "?", "`", "\\",
 }
 
 local dir_to_angle = {
@@ -145,23 +146,40 @@ local function add_splitter(context, args)
     local l = wibox.layout.flex.horizontal()
 
     for k, point in ipairs(points) do
-        context.count = context.count + 1
-        local dir = point.direction or direction
-
-        local b = wibox.container.background()
-        b:set_bg(type_to_bg[s_type] and type_to_bg[s_type](size, dir))
-
+        context.count  = context.count + 1
+        local dir      = point.direction or direction
         local shortcut = module.key_map[context.count]
 
-        local tb = textbox()
-
-        tb:set_markup("<b>".. util.quote_pattern(shortcut) .."</b>")
-        tb:set_valign "middle"
-        tb:set_align  "center"
-
-        b:set_widget(tb)
-
-        l:add(b)
+        l:add(wibox.widget {
+            {
+                nil,
+                {
+                    nil,
+                    {
+                        {
+                            {
+                                markup = "<b>"..util.quote_pattern(shortcut).."</b>",
+                                widget = wibox.widget.textbox
+                            },
+                            margins = 5,
+                            widget  = wibox.container.margin
+                        },
+                        shape  = shape.circle,
+                        fg     = beautiful.bg_normal,
+                        bg     = beautiful.fg_normal,
+                        widget = wibox.container.background,
+                    },
+                    nil,
+                    expand = "none",
+                    layout = wibox.layout.align.vertical
+                },
+                nil,
+                expand = "none",
+                layout = wibox.layout.align.horizontal
+            },
+            bg     = type_to_bg[s_type] and type_to_bg[s_type](size, dir) or nil,
+            widget = wibox.container.background
+        })
 
         context.hooks[shortcut] = point
     end
@@ -182,8 +200,6 @@ local function add_splitter(context, args)
 
     -- Create a wibox
     local w = wibox {
---         x      = math.ceil(args.x + dir_to_width_offset_ratio [s_type][direction]*width),
---         y      = math.ceil(args.y + dir_to_height_offset_ratio[s_type][direction]*size),
         width  = width,
         height = height,
         ontop  = true,
@@ -224,10 +240,12 @@ local function drill(context, root, source)
                 height = height,
             }
 
-            if points then
+            if points and #points > 0 then
                 for k, point in ipairs(points) do
                     add_splitter(context, point)
                 end
+            elseif points and points.points and #points.points > 0 then
+                add_splitter(context, points)
             end
         end
 
