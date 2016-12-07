@@ -182,30 +182,35 @@ end
 local function select_screen(scr_index,move,old_screen)
   if capi.screen[scr_index] ~= capi.screen[old_screen or 1] then
     local c = last_clients[capi.screen[scr_index]]
-    if pcall(c) then
+
+    -- If the client is leaked elsewhere, prevent an error message
+    if c and not pcall(function() return c.valid end) and not c.valid then
       last_clients[capi.screen[scr_index]] = nil
       c = nil
     end
-    if c and c:isvisible() then
+
+    if c and c.valid and c:isvisible() then
       local geom = c:geometry()
       if last_clients_coords[scr_index] and last_clients_coords[scr_index].client == c then
         capi.mouse.coords(last_clients_coords[scr_index])
       else
         capi.mouse.coords({x=geom.x+geom.width/2,y=geom.y+geom.height/2+55})
       end
-      mouse.highlight()
     else
       local geom = capi.screen[scr_index].geometry
       capi.mouse.coords({x=geom.x+geom.width/2,y=geom.y+geom.height/2+55})
     end
+    mouse.highlight()
   end
 
   if move then
-    local t = capi.screen[old_screen].selected_tag
-    t.screen = scr_index
-    awful.tag.viewonly(t)
+    local t = capi.screen[scr_index].selected_tag
+    if t then
+      t.screen = old_screen
+      awful.tag.viewonly(t)
+    end
   else
-    local c = awful.mouse.client_under_pointer()
+    local c = capi.mouse.current_client
     if c then
       capi.client.focus = c
     end
@@ -246,7 +251,6 @@ local function next_screen(ss,dir,move)
   if type(scr_index) == "screen" then
     scr_index = scr_index.index
   end
-
   if dir == "left" then
     scr_index = scr_index == 1 and #screens or scr_index - 1
   elseif dir == "right" then
@@ -268,6 +272,7 @@ function module.display(_,dir,move)
 end
 
 local function highlight_screen(ss)
+  ss = capi.screen[ss]
   if pss ~= ss then
 
     local bg       = beautiful.collision_screen_bg or beautiful.bg_alternate or "#ff0000"
@@ -334,6 +339,13 @@ function module.select_screen(idx)
         return true
     end)
 end
+
+-- Make sure this keeps working when a new screen is added
+awful.screen.connect_for_each_screen(function(s)
+    if next(wiboxes) then
+        create_wibox(s)
+    end
+end)
 
 capi.client.connect_signal("focus",function(c)
     last_clients[c.screen] = c

@@ -5,43 +5,48 @@ local awful        = require( "awful"          )
 local glib         = require( "lgi"            ).GLib
 local col_utils    = require( "collision.util" )
 local module = {
-  _focus  = require( "collision.focus" ),
-  _resize = require( "collision.resize"),
-  _max    = require( "collision.max"   ),
-  _screen = require( "collision.screen"),
-  mouse   = require( "collision.mouse" ),
-  settings= col_utils.settings          ,
-  util    = col_utils                   ,
-  split   = require( "collision.split" ),
+  _focus    = require( "collision.focus"    ),
+  _resize   = require( "collision.resize"   ),
+  _max      = require( "collision.max"      ),
+  _screen   = require( "collision.screen"   ),
+  _floating = require( "collision.floating" ),
+  mouse     = require( "collision.mouse"    ),
+  settings  = col_utils.settings             ,
+  util      = col_utils                      ,
+  split     = require( "collision.split"    ),
+  launch    = require( "collision.launch"   )
 }
 
 local current_mode = "focus"
 
 local event_callback = {
-  focus  = module._focus._global_bydirection_key,
-  move   = module._focus._global_bydirection_key,
-  resize = module._resize.resize                ,
-  max    = module._max.change_focus             ,
-  tag    = module._max.change_tag               ,
-  screen = module._screen.reload                ,
+  focus    = module._focus._global_bydirection_key   ,
+  floating = module._floating._global_bydirection_key,
+  move     = module._focus._global_bydirection_key   ,
+  resize   = module._resize.resize                   ,
+  max      = module._max.change_focus                ,
+  tag      = module._max.change_tag                  ,
+  screen   = module._screen.reload                   ,
 }
 
 local start_callback = {
-  focus  = module._focus.display      ,
-  move   = module._focus.display      ,
-  resize = module._resize.display     ,
-  max    = module._max.display_clients,
-  tag    = module._max.display_tags   ,
-  screen = module._screen.display     ,
+  focus    = module._focus.display         ,
+  floating = module._floating.display      ,
+  move     = module._focus.display         ,
+  resize   = module._resize.display        ,
+  max      = module._max.display_clients   ,
+  tag      = module._max.display_tags      ,
+  screen   = module._screen.display        ,
 }
 
 local exit_callback = {
-  focus  = module._focus._quit ,
-  move   = module._focus._quit ,
-  resize = module._resize.hide ,
-  max    = module._max.hide    ,
-  tag    = module._max.hide    ,
-  screen = module._screen.hide ,
+  focus    = module._focus._quit    ,
+  floating = module._floating._quit ,
+  move     = module._focus._quit    ,
+  resize   = module._resize.hide    ,
+  max      = module._max.hide       ,
+  tag      = module._max.hide       ,
+  screen   = module._screen.hide    ,
 }
 
 local keys = {--Normal  Xephyr        G510 alt         G510
@@ -91,22 +96,32 @@ local function start_loop(is_swap,is_max)
 end
 
 function module.focus(direction,c,max)
-  local screen = (c or ((capi.client.focus and capi.client.focus.focusable) and capi.client.focus or capi.mouse)).screen
-  -- Useless when there is only 1 client tiled, incompatible with the "max_out" mode (in this case, focus floating mode)
-  if awful.layout.get(screen) == awful.layout.suit.max and #awful.client.tiled(screen) > 1 and not max then
-    current_mode = "max"
-    module._max.display_clients(screen,direction)
-  else
+    local screen = (c or ((capi.client.focus and capi.client.focus.focusable) and capi.client.focus or capi.mouse)).screen
+
     current_mode = "focus"
     module._focus.global_bydirection(direction,c,false,max)
-  end
-  start_loop(false,max)
+
+    start_loop(false,max)
+end
+
+function module.floating(direction,c,max)
+    local screen = (c or ((capi.client.focus and capi.client.focus.focusable) and capi.client.focus or capi.mouse)).screen
+
+    current_mode = "floating"
+    module._floating.global_bydirection(direction,c,false,max)
+
+    start_loop(false,max)
 end
 
 function module.move(direction,c,max)
-  current_mode = "move"
-  module._focus.global_bydirection(direction,c,true,max)
-  start_loop(true,max)
+    current_mode = "move"
+    local is_floating = c and c.floating
+    if is_floating then
+        module._floating.global_bydirection(direction,c,true,max)
+    else
+        module._focus.global_bydirection(direction,c,true,max)
+    end
+    start_loop(true,max)
 end
 
 function module.resize(direction,c,max)
@@ -163,7 +178,7 @@ local function new(k)
                               { description = "Move to the "..key_nane, group = "Collision" })
         aw[#aw+1] = awful.key({ "Mod4", "Shift",   "Control"         }, key_nane, function () module.move  (k,nil ,true) end,
                               { description = "", group = "Collision" })
-        aw[#aw+1] = awful.key({ "Mod4",            "Control"         }, key_nane, function () module.focus (k,nil ,true) end,
+        aw[#aw+1] = awful.key({ "Mod4",            "Control"         }, key_nane, function () module.floating(k,nil ,true) end,
                               { description = "Change floating focus to the "..key_nane, group = "Collision" })
         aw[#aw+1] = awful.key({ "Mod4", "Mod1" ,   "Control"         }, key_nane, function () module.screen(k          ) end,
                               { description = "Change screen to the "..key_nane, group = "Collision" })
