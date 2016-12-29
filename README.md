@@ -35,13 +35,11 @@ It is a very good idea to also change the default `mod4+arrow` shortcut to
 something else:
 
 ```lua
-    --Change
-    awful.key({ modkey,           }, "Left",   awful.tag.viewprev       ),
-    awful.key({ modkey,           }, "Right",  awful.tag.viewnext       ),
-
-    --To:
-    --awful.key({ modkey,           }, "Left",   awful.tag.viewprev       ),
-    --awful.key({ modkey,           }, "Right",  awful.tag.viewnext       ),
+    --Remove those lines:
+    awful.key({ modkey,           }, "Left",   awful.tag.viewprev,
+     {description = "view previous", group = "tag"}),
+    awful.key({ modkey,           }, "Right",  awful.tag.viewnext,
+     {description = "view next", group = "tag"}),
 ```
 
 Your done!
@@ -58,8 +56,8 @@ while the `Control` key is used to max out the effect.
 | `Mod4`     |              | `Control`    | Move the focus on the floating layer                  |
 | `Mod4`     | `Shift`      |              | Move a client in the tiled or floating layer          |
 | `Mod4`     | `Shift`      | `Control`    | Move a floating client to the far side of that screen |
-| `Mod4`     | `Mod1 (Alt)` |              | Resize a client relative to the bottom right corner   |
-| `Mod4`     | `Mod1 (Alt)` | `Shift`      | Resize a client relative to the top left corner       |
+| `Mod4`     | `Mod1 (Alt)` |              | Increase a floating client size                       |
+| `Mod4`     | `Mod1 (Alt)` | `Shift`      | Reduce a floating client size                         |
 | `Control`  | `Mod1 (Alt)` |              | Move to the next/previous tag                         |
 | `Control`  | `Mod4`       | `Mod1 (Alt)` | Move to the next/previous screen                      |
 | `Control`  | `Mod4`       | `Mod1 (Alt)` | + `Shift` Move tag to the next/previous screen        |
