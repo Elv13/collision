@@ -8,6 +8,7 @@ local awful        = require("awful")
 local beautiful    = require("beautiful")
 local color        = require( "gears.color")
 local util         = require( "collision.util"   )
+local shape        = require( "gears.shape" )
 local capi         = { screen = screen, client=client }
 
 local module = {}
@@ -40,13 +41,13 @@ end
 
 function module.get_geometry(tag)
   local cls,results,flt = {},setmetatable({},{__mode="k"}),{}
-  local s = awful.tag.getscreen(tag)
+  local s = tag.screen
   local l = awful.tag.getproperty(tag,"layout")
   local focus,focus_wrap = capi.client.focus,nil
   for k,c in ipairs (tag:clients()) do
     -- Handle floating client separately
     if not c.minimized then
-      local floating = awful.client.floating.get(c)
+      local floating = c.floating
       if (not floating) and (not l ==  awful.layout.suit.floating) then
         cls[#cls+1] = gen_cls(c,results)
         if c == focus then
@@ -81,7 +82,7 @@ end
 function module.draw(tag,cr,width,height)
   local worked = false
   local l,l2 = module.get_geometry(tag)
-  local s = awful.tag.getscreen(tag)
+  local s = tag.screen
   local scr_geo = capi.screen[s or 1].workarea
   local ratio = height/scr_geo.height
   local w_stretch = width/(scr_geo.width*ratio)
@@ -89,7 +90,13 @@ function module.draw(tag,cr,width,height)
   cr:set_line_width(3)
   for c,ll in ipairs({l,l2}) do
     for c,geom in pairs(ll) do
-      util.draw_round_rect(cr,geom.x*ratio*w_stretch+margin,geom.y*ratio+margin,geom.width*ratio*w_stretch-margin*2,geom.height*ratio-margin*2,radius)
+      shape.transform(shape.rounded_rect)
+        : translate(geom.x*ratio*w_stretch+margin, geom.y*ratio+margin) (
+            cr,
+            geom.width*ratio*w_stretch-margin*2,
+            geom.height*ratio-margin*2,
+            radius
+      )
       cr:close_path()
       cr:set_source_rgba(r,g,b,0.7)
       cr:stroke_preserve()

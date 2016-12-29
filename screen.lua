@@ -1,26 +1,26 @@
 local capi = {screen=screen,client=client,mouse=mouse, keygrabber = keygrabber}
-local math,table = math,table
+local math = math
 local wibox        = require( "wibox"           )
 local awful        = require( "awful"           )
-local cairo        = require( "lgi"             ).cairo
-local color        = require( "gears.color"     )
 local beautiful    = require( "beautiful"       )
 local surface      = require( "gears.surface"   )
 local pango        = require( "lgi"             ).Pango
 local pangocairo   = require( "lgi"             ).PangoCairo
 local mouse        = require( "collision.mouse" )
 local util         = require( "collision.util"  )
+local shape        = require( "gears.shape"     )
+local scale        = pango.SCALE
 
 local module = {}
 
 local wiboxes = {}
-local size  = 100
-local shape = nil
-local pss   = 1
-local opss  = nil
+local wiboxes_s = setmetatable({},{__mode="k"})
+local bgs = {}
+local size  = 75
+local pss   = capi.mouse.screen
 
 -- Keep an index of the last selection client for each screen
-local last_clients = setmetatable({},{__mode="v"})
+local last_clients = setmetatable({},{__mode="kv"})
 local last_clients_coords = {}
 
 local screens,screens_inv = util.get_ordered_screens()
@@ -29,68 +29,161 @@ local function current_screen(focus)
   return (not focus) and capi.mouse.screen or (capi.client.focus and capi.client.focus.screen or capi.mouse.screen)
 end
 
-local function create_text(text)
-  local img = cairo.ImageSurface(cairo.Format.ARGB32, size, size)
-  local cr = cairo.Context(img)
-  local selected = text == screens[pss]
-  cr:set_source(color(selected and beautiful.bg_urgent or beautiful.bg_alternate or beautiful.bg_normal))
-  if selected then
-    opss = screens_inv[text]
-  end
-  cr:paint()
-  cr:set_source(color(beautiful.fg_normal))
-  cr:set_line_width(6)
-  cr:arc(size/2,size/2,size/2,0,2*math.pi)
-  cr:stroke()
-  local pango_crx = pangocairo.font_map_get_default():create_context()
-  local pango_l = pango.Layout.new(pango_crx)
-  local desc = pango.FontDescription()
-  desc:set_family("Verdana")
-  desc:set_weight(pango.Weight.BOLD)
-  desc:set_size(60 * pango.SCALE)
-  pango_l:set_font_description(desc)
-  pango_l.text = text
-  local geo = pango_l:get_pixel_extents()
-  cr:move_to(((size-geo.width)/2)*.75,0)--(size-geo.height)/2)
-  cr:show_layout(pango_l)
-  return surface(img)
+local function fit(self,_,width,height)
+    -- Compute the optimal font size
+    local padding   = self._private.padding or 10
+    local tm        = self._private.top_margin or 0
+    height          = math.max(0, height - tm)
+    local min       = math.min(width, height)
+    local font_size = math.max(0, min - 2*padding)
+
+    self._private.desc:set_size( font_size * scale )
+    self._private.layout:set_font_description(self._private.desc)
+
+    local _, geo = self._private.layout:get_pixel_extents()
+
+    -- The extra "min" is in case a font "lie" and is too big.
+    return math.min(geo.x+geo.width, min), math.min(geo.y+geo.height, min) + tm
 end
 
-local function create_shape_bounding(wa)
-  local w = wibox{}
-  w.width  = size
-  w.height = size
-  w.x= math.floor(wa.x+wa.width/2-size/2)
-  w.y= math.floor(wa.y+wa.height/2-size/2)
-  w.ontop = true
-  if not shape then
-    shape    = cairo.ImageSurface(cairo.Format.ARGB32, size, size)
-    local cr = cairo.Context(shape)
-    cr:set_source_rgba(0,0,0,0)
-    cr:paint()
-    cr:set_source_rgba(1,1,1,1)
-    cr:arc(size/2,size/2,size/2,0,2*math.pi)
-    cr:fill()
-  end
-  w.shape_bounding = shape._native
-  return w
+local function draw(self, _, cr, width, height)
+    -- Some layouts never call fit()...
+    fit(self, context, width, height)
+
+    local _, geo = self._private.layout:get_pixel_extents()
+    local tm     = self._private.top_margin or 0
+    local sz     = math.min(width, height - tm)
+
+    -- Translate the canvas to center the text
+    local dy = ( sz - geo.height  )/2 - geo.y + tm
+    local dx = ( sz - geo.width   )/2 - geo.x
+    cr:move_to(dx, dy)
+
+    -- Show the text
+    cr:show_layout(self._private.layout)
 end
 
-local function init_wiboxes(direction)
-  if #wiboxes > 0 then return end
-  for s=1, capi.screen.count() do
-    local w = create_shape_bounding(capi.screen[s].geometry)
-    wiboxes[s] = w
-    w:set_widget(wibox.widget.imagebox(create_text(screens[s])))
-  end
-  return true
+local function set_screen(self, s)
+    self._private.layout.text = tostring(s.index)
+    self:emit_signal("widget::layout_changed")
+end
+
+local function set_padding(self, padding)
+    self._private.padding = padding
+    self:emit_signal("widget::layout_changed")
+end
+
+local function set_top_margin(margin)
+    self._private.top_margin = margin or 0
+    self:emit_signal("widget::layout_changed")
+end
+
+local function new_constrained_text(s)
+    local wdg = wibox.widget.base.empty_widget()
+
+    -- Add the basic functions
+    rawset(wdg, "draw"           , draw           )
+    rawset(wdg, "fit"            , fit            )
+    rawset(wdg, "set_screen"     , set_screen     )
+    rawset(wdg, "set_padding"    , set_padding    )
+    rawset(wdg, "set_top_margin" , set_top_margin )
+
+    -- Create the pango objects
+    local pango_crx = pangocairo.font_map_get_default():create_context()
+    local pango_l   = pango.Layout.new(pango_crx)
+    local desc      = pango.FontDescription()
+    desc:set_family( "Verdana"         )
+    desc:set_weight( pango.Weight.BOLD )
+
+    wdg._private.layout = pango_l
+    wdg._private.desc   = desc
+    wdg:emit_signal("widget::layout_changed")
+
+    if s then set_screen(wdg, s) end
+
+    return wdg
+end
+
+local function create_wibox(s)
+    s = capi.screen[s]
+
+    if wiboxes_s[s] then return wiboxes_s[s] end
+
+    local wa = s.workarea
+
+    -- Create a round wibox
+    local w = wibox {
+        width  = size,
+        height = size,
+        x      = math.floor(wa.x+wa.width /2-size/2),
+        y      = math.floor(wa.y+wa.height/2-size/2),
+        ontop  = true
+    }
+
+    -- Theme options
+    local sh       = beautiful.collision_screen_shape or shape.circle
+    local bw       = beautiful.collision_screen_border_width
+    local bc       = beautiful.collision_screen_border_color
+    local padding  = beautiful.collision_screen_padding or 10
+    local bg       = beautiful.collision_screen_bg or beautiful.bg_alternate or "#ff0000"
+    local fg       = beautiful.collision_screen_fg or beautiful.fg_normal    or "#0000ff"
+    local bg_focus = beautiful.collision_screen_bg_focus or beautiful.bg_urgent or "#ff0000"
+    local fg_focus = beautiful.collision_screen_fg_focus or beautiful.fg_urgent or "#ff0000"
+
+    -- Setup the widgets
+    w:setup {
+        {
+            nil,
+            {
+                nil,
+                {
+                    screen  = s,
+                    padding = padding,
+                    widget  = new_constrained_text
+                },
+                nil,
+                layout = wibox.layout.align.vertical
+            },
+            nil,
+            layout = wibox.layout.align.horizontal
+        },
+        bg                 = bg,
+        shape              = sh or shape.circle,
+        shape_border_width = bw,
+        shape_border_color = bc,
+        id                 = "main_background",
+        widget             = wibox.container.background
+    }
+
+    -- Set the wibox shape
+    surface.apply_shape_bounding(w, sh)
+
+    wiboxes_s[s] = w
+    wiboxes[s.index] = w --DEPRECATED
+    bgs[s] = w:get_children_by_id("main_background")[1]
+
+    return w
+end
+
+-- Hopefully, the wiboxes will be gargabe collected
+local init = false
+local function init_wiboxes()
+    if init then return end
+
+    awful.screen.connect_for_each_screen(function(s)
+        create_wibox(s)
+    end)
+
+    init = true
+
+    return true
 end
 
 local function select_screen(scr_index,move,old_screen)
-  if scr_index ~= old_screen then
-    local c = last_clients[scr_index]
+  if capi.screen[scr_index] ~= capi.screen[old_screen or 1] then
+    local c = last_clients[capi.screen[scr_index]]
     if pcall(c) then
-      last_clients[scr_index] = nil
+      last_clients[capi.screen[scr_index]] = nil
       c = nil
     end
     if c and c:isvisible() then
@@ -108,8 +201,8 @@ local function select_screen(scr_index,move,old_screen)
   end
 
   if move then
-    local t = awful.tag.selected(old_screen)
-    awful.tag.setscreen(t,scr_index)
+    local t = capi.screen[old_screen].selected_tag
+    t.screen = scr_index
     awful.tag.viewonly(t)
   else
     local c = awful.mouse.client_under_pointer()
@@ -118,7 +211,7 @@ local function select_screen(scr_index,move,old_screen)
     end
   end
 
-  return scr_index
+  return capi.screen[scr_index]
 end
 
 local function in_rect(c,point)
@@ -146,7 +239,13 @@ local function save_cursor_position()
 end
 
 local function next_screen(ss,dir,move)
-  local scr_index = screens_inv[ss]
+  if capi.screen.count() == 1 then return 1 end
+
+  local scr_index = capi.screen[screens_inv[ss]].index
+
+  if type(scr_index) == "screen" then
+    scr_index = scr_index.index
+  end
 
   if dir == "left" then
     scr_index = scr_index == 1 and #screens or scr_index - 1
@@ -154,29 +253,35 @@ local function next_screen(ss,dir,move)
     scr_index = scr_index == #screens and 1 or scr_index+1
   end
 
-  return select_screen(screens_inv[scr_index],move,ss)
+  return select_screen(screens_inv[capi.screen[scr_index]],move,ss)
 end
 
 function module.display(_,dir,move)
   if #wiboxes == 0 then
-    init_wiboxes(dir)
+    init_wiboxes()
   end
   save_cursor_position()
-  module.reload(nil,direction)
+  module.reload(nil,dir)
   local ss = current_screen(move)
   next_screen(ss,dir,move)
-  module.reload(nil,direction)
+  module.reload(nil,dir)
 end
 
 local function highlight_screen(ss)
   if pss ~= ss then
-    pss = nil
-    -- Reset the color on the last selected screen
-    if opss then
-      wiboxes[opss]:set_widget(wibox.widget.imagebox(create_text(screens[opss])))
-    end
+
+    local bg       = beautiful.collision_screen_bg or beautiful.bg_alternate or "#ff0000"
+    local fg       = beautiful.collision_screen_fg or beautiful.fg_normal    or "#0000ff"
+    local bg_focus = beautiful.collision_screen_bg_focus or beautiful.bg_urgent or "#ff0000"
+    local fg_focus = beautiful.collision_screen_fg_focus or beautiful.fg_urgent or "#ff0000"
+
+    bgs[pss].bg = bg
+    bgs[pss].fg = fg
+
     pss = ss
-    wiboxes[ss]:set_widget(wibox.widget.imagebox(create_text(screens[ss])))
+
+    bgs[ss].bg = bg_focus
+    bgs[ss].fg = fg_focus
   end
 end
 
@@ -195,7 +300,7 @@ local function show()
   end
 end
 
-function module.reload(mod,dir,__,___,move)
+function module.reload(mod,dir,_,_,move)
   local ss = current_screen(move)
   if dir then
     ss = next_screen(ss,dir:lower(),move or (mod and #mod == 4))
@@ -209,33 +314,30 @@ function module.reload(mod,dir,__,___,move)
 end
 
 function module.select_screen(idx)
-  save_cursor_position()
-  select_screen(screens_inv[idx],false)
-  if #wiboxes == 0 then
-    init_wiboxes(dir)
-  end
-
-  highlight_screen(screens_inv[idx])
-  
-  show()
-
-  capi.keygrabber.run(function(mod, key, event)
-    if event == "release" then
-      module.hide()
-      mouse.hide()
-      capi.keygrabber.stop()
-      return false
+    save_cursor_position()
+    select_screen(screens_inv[idx],false)
+    if #wiboxes == 0 then
+        init_wiboxes()
     end
-    return true
-  end)
+
+    highlight_screen(screens_inv[idx])
+
+    show()
+
+    capi.keygrabber.run(function(_, _, event)
+        if event == "release" then
+            module.hide()
+            mouse.hide()
+            capi.keygrabber.stop()
+            return false
+        end
+        return true
+    end)
 end
 
--- capi.mouse.connect_signal("property::screen",1,function(i)
---   print("FOO",i)
--- end)
 capi.client.connect_signal("focus",function(c)
-  last_clients[c.screen] = c
+    last_clients[c.screen] = c
 end)
 
 return module
--- kate: space-indent on; indent-width 2; replace-tabs on;
+-- kate: space-indent on; indent-width 4; replace-tabs on;

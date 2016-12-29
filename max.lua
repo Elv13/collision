@@ -7,6 +7,8 @@ local beautiful    = require( "beautiful"        )
 local surface      = require( "gears.surface"    )
 local layout       = require( "collision.layout" )
 local util         = require( "collision.util"   )
+local shape        = require( "gears.shape"      )
+local shape        = require( "gears.shape"      )
 local pango = require("lgi").Pango
 local pangocairo = require("lgi").PangoCairo
 local module = {}
@@ -22,26 +24,24 @@ local function init()
 end
 
 local margin = 15
+
 local function create_arrow(cr,x,y,width, height,direction)
-  cr:save()
-  cr:translate(x,y)
-  if direction then
-    cr:translate(width,height)
-    cr:rotate(math.pi)
-  end
-  cr:move_to(x,y)
   local r,g,b = util.get_rgb()
   cr:set_source_rgba(r,g,b,0.15)
   cr:set_antialias(1)
-  cr:rectangle(2*margin,2*(height/7),width/3,3*(height/7))
+
+  local s = shape.transform(shape.arrow)
+    : rotate_at(width/4, height/4, math.pi/2)
+
+  if direction == 1 then
+    s : rotate_at(width/4, height/4, math.pi)
+  end
+
+  s : translate(x, y)
+
+  s(cr, width/2, height/2, nil)
+
   cr:fill()
-  cr:move_to(2*margin+width/3,(height/7))
-  cr:line_to(width-2*margin,height/2)
-  cr:line_to(2*margin+width/3,6*(height/7))
-  cr:line_to(2*margin+width/3,(height/7))
-  cr:close_path()
-  cr:fill()
-  cr:restore()
 end
 
 local pango_l = nil
@@ -89,12 +89,19 @@ local function draw_shape(s,collection,current_idx,icon_f,y,text_height)
   for k,v in ipairs(collection) do
     -- Shape bounding
     cr:set_source(white)
-    util.draw_round_rect(cr,dx,0,width,height,rad)
+
+    local s = shape.transform(shape.rounded_rect) : translate(dx, 0)
+    s(cr, width, height, 10)
     cr:fill()
 
     -- Borders and background
     cr3:set_source(k==current_idx and focus or nornal)
     util.draw_round_rect(cr3,dx+border,0+border,width-2*border,height-2*border,rad)
+
+--     cr3:move_to(0,0)
+--     s = shape.transform(shape.rounded_rect) : translate(dx+border, border)
+--     s(cr3, width-2*border, height-2*border, rad)
+
     cr3:set_line_width(2*border + 4) -- The 4 is required to cover the non-antialiased region
     cr3:stroke_preserve()
     cr3:set_source(bg)
@@ -159,9 +166,10 @@ local function client_icon(c,width,height)
   local w,h = geom.width*scale,geom.height*scale
 
   -- Create a mask
-  util.draw_round_rect(cr,(width-w)/2,(height-h)/2,w,h,10)
+  local s = shape.transform(shape.rounded_rect) : translate((width-w)/2, (height-h)/2)
+  s(cr, w, h, 10)
 
-  cr:fill()
+  cr:clip()
 
   cr:translate((width-w)/2,(height-h)/2)
 
@@ -171,9 +179,8 @@ local function client_icon(c,width,height)
 
   -- Paint the screenshot in the rounded rectangle
   cr:set_source_surface(surface(c.content))
-  cr:set_operator(cairo.Operator.IN)
+
   cr:paint()
-  cr:restore()
   cr:restore()
 
   -- Add icon on top, "solve" the black window issue
@@ -183,13 +190,13 @@ local function client_icon(c,width,height)
     return img
   end
 
-  local w,h = icon:get_width(),icon:get_height()
-  local aspect,aspect_h = width / w,(height) / h
-  if aspect > aspect_h then aspect = aspect_h end
-  cr:translate((width-w*aspect)/2,(height-h*aspect)/2)
-  cr:scale(aspect, aspect)
-  cr:set_source_surface(icon)
-  cr:paint_with_alpha(0.5)
+--   local w,h = icon:get_width(),icon:get_height()
+--   local aspect,aspect_h = width / w,(height) / h
+--   if aspect > aspect_h then aspect = aspect_h end
+--   cr:translate((width-w*aspect)/2,(height-h*aspect)/2)
+--   cr:scale(aspect, aspect)
+--   cr:set_source_surface(icon)
+--   cr:paint_with_alpha(0.5)
 
   return img
 end
@@ -226,7 +233,7 @@ local function tag_icon(t,width,height)
   local has_layout = layout.draw(t,cr,width,height)
 
   -- Create a monochrome representation of the icon
-  local icon_orig = surface(awful.tag.geticon(t))
+  local icon_orig = surface(t.icon)
     if icon_orig then
       local icon = cairo.ImageSurface(cairo.Format.ARGB32, icon_orig:get_width(), icon_orig:get_height())
       local cr2 = cairo.Context(icon)
@@ -254,14 +261,14 @@ local function change_tag(s,direction,is_swap)
     awful.tag[direction == "left" and "viewprev" or "viewnext"](s)
   else
     -- Move the tag
-    local t = awful.tag.selected(s)
-    local cur_idx,count = awful.tag.getidx(t),#awful.tag.gettags(s)
+    local t = capi.screen[s].selected_tag
+    local cur_idx,count = awful.tag.getidx(t),#capi.screen[s].tags
     cur_idx = cur_idx + (direction == "left" and -1 or 1)
     cur_idx = cur_idx == 0 and count or cur_idx > count and 1 or cur_idx
-    awful.tag.move(cur_idx,t)
+    t.index = cur_idx
   end
-  local tags = awful.tag.gettags(s)
-  local fk = awful.util.table.hasitem(tags,awful.tag.selected(s))
+  local tags = capi.screen[s].tags
+  local fk = awful.util.table.hasitem(tags,capi.screen[s].selected_tag)
   draw_shape(s,tags,fk,tag_icon,capi.screen[s].workarea.y + 15,20)
 end
 

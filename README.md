@@ -98,11 +98,33 @@ namespace
 
 ## Focus
 
-| Variable              | Description                                           |
-| :-------------------: | ----------------------------------------------------- |
-| collision_bg_focus    | The background of the focus change arrow              |
-| collision_fg_focus    | The foregroung filling color of the arrow             |
-| collision_bg_center   | The focussed client circle background                 |
+| Variable                      | Description                                            |
+| :---------------------------: | ------------------------------------------------------ |
+| collision_bg_focus            | The background of the focus change arrow               |
+| collision_fg_focus            | The foregroung filling color of the arrow              |
+| collision_bg_center           | The focussed client circle background                  |
+| collision_resize_width        | The size of the resize handles                         |
+| collision_resize_shape        | The gears.shape used for the resize handle             |
+| collision_resize_border_width | The resize handles border width                        |
+| collision_resize_border_color | The resize handles border colors                       |
+| collision_resize_padding      | The resize handles padding between the boder and arrow |
+| collision_resize_bg           | The resize handles background color                    |
+| collision_resize_fg           | The resize handles arrow color                         |
+| collision_focus_shape         |                                                        |
+| collision_focus_border_width  |                                                        |
+| collision_focus_border_color  |                                                        |
+| collision_focus_padding       |                                                        |
+| collision_focus_bg            |                                                        |
+| collision_focus_fg            |                                                        |
+| collision_focus_bg_center     |                                                        |
+| collision_screen_shape        |                                                        |
+| collision_screen_border_width |                                                        |
+| collision_screen_border_color |                                                        |
+| collision_screen_padding      |                                                        |
+| collision_screen_bg           |                                                        |
+| collision_screen_fg           |                                                        |
+| collision_screen_bg_focus     |                                                        |
+| collision_screen_fg_focus     |                                                        |
 
 # Settings
 
@@ -119,6 +141,7 @@ assigned to shortcuts.
 The `collision.highlight_cursor(timeout)` method will highlight the current mouse
 cursor position.
 
+Use `collision.mouse.highlight()` and `collision.mouse.hide()`
 # Notes
 
 Using the focus arrows to select empty screens only work in Awesome 3.5.7+

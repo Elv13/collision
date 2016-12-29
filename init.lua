@@ -9,7 +9,7 @@ local module = {
   _resize = require( "collision.resize"),
   _max    = require( "collision.max"   ),
   _screen = require( "collision.screen"),
-  _mouse  = require( "collision.mouse" ),
+  mouse   = require( "collision.mouse" ),
   settings= col_utils.settings          ,
   util    = col_utils                   ,
 }
@@ -134,11 +134,11 @@ function module.select_screen(idx)
 end
 
 function module.highlight_cursor(timeout)
-  module._mouse.highlight()
+  module.mouse.highlight()
   if timer then
     local timer = capi.timer({ timeout = timeout }) -- 30 mins
     timer:connect_signal("timeout", function()
-      module._mouse.hide()
+      module.mouse.hide()
       timer:stop()
     end)
     timer:start()
@@ -154,16 +154,25 @@ local function new(k)
   glib.idle_add(glib.PRIORITY_DEFAULT_IDLE, function()
     for k,v in pairs(keys) do
       for _,key_nane in ipairs(v) do
-        aw[#aw+1] = awful.key({ "Mod4",                              }, key_nane, function () module.focus (k          ) end)
-        aw[#aw+1] = awful.key({ "Mod4", "Mod1"                       }, key_nane, function () module.resize(k          ) end)
-        aw[#aw+1] = awful.key({ "Mod4", "Shift"                      }, key_nane, function () module.move  (k          ) end)
-        aw[#aw+1] = awful.key({ "Mod4", "Shift",   "Control"         }, key_nane, function () module.move  (k,nil ,true) end)
-        aw[#aw+1] = awful.key({ "Mod4",            "Control"         }, key_nane, function () module.focus (k,nil ,true) end)
-        aw[#aw+1] = awful.key({ "Mod4", "Mod1" ,   "Control"         }, key_nane, function () module.screen(k          ) end)
-          aw[#aw+1] = awful.key({ "Mod1", "Shift", "Control", "Mod4" }, key_nane, function () module.screen(k,true     ) end)
+        aw[#aw+1] = awful.key({ "Mod4",                              }, key_nane, function () module.focus (k          ) end,
+                              { description = "Change focus to the "..key_nane, group = "Collision" })
+        aw[#aw+1] = awful.key({ "Mod4", "Mod1"                       }, key_nane, function () module.resize(k          ) end,
+                              { description = "Resize to the "..key_nane, group = "Collision" })
+        aw[#aw+1] = awful.key({ "Mod4", "Shift"                      }, key_nane, function () module.move  (k          ) end,
+                              { description = "Move to the "..key_nane, group = "Collision" })
+        aw[#aw+1] = awful.key({ "Mod4", "Shift",   "Control"         }, key_nane, function () module.move  (k,nil ,true) end,
+                              { description = "", group = "Collision" })
+        aw[#aw+1] = awful.key({ "Mod4",            "Control"         }, key_nane, function () module.focus (k,nil ,true) end,
+                              { description = "Change floating focus to the "..key_nane, group = "Collision" })
+        aw[#aw+1] = awful.key({ "Mod4", "Mod1" ,   "Control"         }, key_nane, function () module.screen(k          ) end,
+                              { description = "Change screen to the "..key_nane, group = "Collision" })
+          aw[#aw+1] = awful.key({ "Mod1", "Shift", "Control", "Mod4" }, key_nane, function () module.screen(k,true     ) end,
+                                { description = "Move tag screen to the "..key_nane, group = "Collision" })
         if k == "left" or k =="right" then -- Conflict with my text editor, so I say no
-          aw[#aw+1] = awful.key({ "Mod1",          "Control"         }, key_nane, function () module.tag   (k,nil ,true) end)
-          aw[#aw+1] = awful.key({ "Mod1", "Shift", "Control"         }, key_nane, function () module.tag   (k,true,true) end)
+          aw[#aw+1] = awful.key({ "Mod1",          "Control"         }, key_nane, function () module.tag   (k,nil ,true) end,
+                                { description = "Select tag to the "..key_nane, group = "Collision" })
+          aw[#aw+1] = awful.key({ "Mod1", "Shift", "Control"         }, key_nane, function () module.tag   (k,true,true) end,
+                                { description = "Move tag to the "..key_nane, group = "Collision" })
         end
       end
     end
