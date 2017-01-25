@@ -31,7 +31,7 @@ Now, open ~/.config/awesome/rc.lua (or copy /etc/xdg/awesome/rc.lua to
     require("collision")()
 ```
 
-It is a very good idea to also change the default `mod4+arrow` shortcut to
+It is a very good idea to also change the default <kbd>Mod4</kbd>+<kbd>arrow</kbd> shortcut to
 something else:
 
 ```lua
@@ -46,28 +46,28 @@ Your done!
 
 # Usage
 
-Using Collision is easy. You just have to hit the arrow keys (`➡` `⬆` `⬇` `⬅`)
-with some modifiers keys. The `Shift` key is usually used for grabbing something
-while the `Control` key is used to max out the effect.
+Using Collision is easy. You just have to hit the arrow keys (<kbd>➡</kbd> <kbd>⬆</kbd> <kbd>⬇</kbd> <kbd>⬅</kbd>)
+with some modifiers keys. The <kbd>Shift</kbd> key is usually used for grabbing something
+while the <kbd>Control</kbd> key is used to max out the effect.
 
-| Modifier 1 | Modifier 2   |  Modifier 3  | Effect                                                |
-| :--------: | :----------: | :----------: | ----------------------------------------------------- |
-| `Mod4`     |              |              | Move the focus om the tiled layer                     |
-| `Mod4`     |              | `Control`    | Move the focus on the floating layer                  |
-| `Mod4`     | `Shift`      |              | Move a client in the tiled or floating layer          |
-| `Mod4`     | `Shift`      | `Control`    | Move a floating client to the far side of that screen |
-| `Mod4`     | `Mod1 (Alt)` |              | Increase a floating client size                       |
-| `Mod4`     | `Mod1 (Alt)` | `Shift`      | Reduce a floating client size                         |
-| `Control`  | `Mod1 (Alt)` |              | Move to the next/previous tag                         |
-| `Control`  | `Mod4`       | `Mod1 (Alt)` | Move to the next/previous screen                      |
-| `Control`  | `Mod4`       | `Mod1 (Alt)` | + `Shift` Move tag to the next/previous screen        |
+| Modifier 1         | Modifier 2            | Modifier 3            | Effect                                                  |
+| :----------:       | :----------:          | :----------:          | ------------------------------------------------------- |
+| <kbd>Mod4</kbd>    |                       |                       | Move the focus om the tiled layer                       |
+| <kbd>Mod4</kbd>    |                       | <kbd>Control</kbd>    | Move the focus on the floating layer                    |
+| <kbd>Mod4</kbd>    | <kbd>Shift</kbd>      |                       | Move a client in the tiled or floating layer            |
+| <kbd>Mod4</kbd>    | <kbd>Shift</kbd>      | <kbd>Control</kbd>    | Move a floating client to the far side of that screen   |
+| <kbd>Mod4</kbd>    | <kbd>Mod1 (Alt)</kbd> |                       | Increase a floating client size                         |
+| <kbd>Mod4</kbd>    | <kbd>Mod1 (Alt)</kbd> | <kbd>Shift</kbd>      | Reduce a floating client size                           |
+| <kbd>Control</kbd> | <kbd>Mod1 (Alt)</kbd> |                       | Move to the next/previous tag                           |
+| <kbd>Control</kbd> | <kbd>Mod4</kbd>       | <kbd>Mod1 (Alt)</kbd> | Move to the next/previous screen                        |
+| <kbd>Control</kbd> | <kbd>Mod4</kbd>       | <kbd>Mod1 (Alt)</kbd> | + <kbd>Shift</kbd> Move tag to the next/previous screen |
 
 # Using different keys
 
 Due to the large ammount of keyboard shortcut Collision create, they are
 auto-generated automatically. While this make installation simpler, it also
 make Collision somewhat hard-coded magic. Some alternative keymaps can also
-be ackward to use because of the reliance on mod keys such as `Alt` and `Control`.
+be ackward to use because of the reliance on mod keys such as <kbd>Alt</kbd> and <kbd>Control</kbd>.
 
 That being said, Collision allow some basic remapping. Instead of:
 
@@ -141,6 +141,7 @@ The `collision.highlight_cursor(timeout)` method will highlight the current mous
 cursor position.
 
 Use `collision.mouse.highlight()` and `collision.mouse.hide()`
+
 # Notes
 
 Using the focus arrows to select empty screens only work in Awesome 3.5.7+
