@@ -52,7 +52,7 @@ while the <kbd>Control</kbd> key is used to max out the effect.
 
 | Modifier 1         | Modifier 2            | Modifier 3            | Effect                                                  |
 | :----------:       | :----------:          | :----------:          | ------------------------------------------------------- |
-| <kbd>Mod4</kbd>    |                       |                       | Move the focus om the tiled layer                       |
+| <kbd>Mod4</kbd>    |                       |                       | Move the focus on the tiled layer                       |
 | <kbd>Mod4</kbd>    |                       | <kbd>Control</kbd>    | Move the focus on the floating layer                    |
 | <kbd>Mod4</kbd>    | <kbd>Shift</kbd>      |                       | Move a client in the tiled or floating layer            |
 | <kbd>Mod4</kbd>    | <kbd>Shift</kbd>      | <kbd>Control</kbd>    | Move a floating client to the far side of that screen   |
