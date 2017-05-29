@@ -66,7 +66,11 @@ local function init()
             widget             = wibox.container.background
         }
 
-        surface.apply_shape_bounding(wiboxes[v], r_shape)
+        if awesome.version >= "v4.1" then
+            wiboxes[v].shape = r_shape
+        else
+            surface.apply_shape_bounding(wiboxes[v], r_shape)
+        end
     end
 end
 
