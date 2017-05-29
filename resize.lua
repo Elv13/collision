@@ -72,7 +72,11 @@ local function create_indicators()
             widget             = wibox.container.background
         }
 
-        surface.apply_shape_bounding(w, s)
+        if awesome.version >= "v4.1" then
+            w.shape = s
+        else
+            surface.apply_shape_bounding(w, s)
+        end
 
         ret[v] = w
     end
