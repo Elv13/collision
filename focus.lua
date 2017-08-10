@@ -32,16 +32,20 @@ local function init()
     local bg       = beautiful.collision_focus_bg or beautiful.bg_alternate or "#ff0000"
     local fg       = beautiful.collision_focus_fg or beautiful.fg_normal    or "#0000ff"
     local bg_focus = beautiful.collision_focus_bg_center or beautiful.bg_urgent or "#ff0000"
+    local sw       = beautiful.collision_shape_width or 75
+    local sh       = beautiful.collision_shape_height or 75
 
     for k,v in ipairs({"up","right","down","left","center"}) do
         wiboxes[v] = wibox {
-            height = 75,
-            width  = 75,
+            height = sh,
+            width  = sw,
             ontop  = true
         }
 
         local r_shape = v == "center" and shape.circle or s
         local r_bg    = v == "center" and bg_focus    or bg
+        local x = sw/2 - padding
+        local y = sh/2 - padding
 
         wiboxes[v]:setup {
             v ~= "center" and {
@@ -50,7 +54,7 @@ local function init()
                         widget = wibox.widget.imagebox
                     },
                     shape  = shape.transform(col_utils.arrow_path2)
-                                : rotate_at(55/2, 55/2, (k-1)*(2*math.pi)/4),
+                                : rotate_at(x, y, (k-1)*(2*math.pi)/4),
                     bg     = fg,
                     widget = wibox.container.background
                 },
