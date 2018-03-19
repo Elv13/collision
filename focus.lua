@@ -187,7 +187,7 @@ local function bydirection(dir, c, swap,max)
           local old_src = capi.client.focus and capi.client.focus.screen
           capi.client.focus = cltbl[((not cl and #cltbl == 1) and 1 or target)]
           capi.client.focus:raise()
-          if old_src and capi.client.focus.screen ~= capi.screen[old_src] then
+          if not old_src or capi.client.focus.screen ~= capi.screen[old_src] then
             capi.mouse.coords(capi.client.focus:geometry())
           end
         end
