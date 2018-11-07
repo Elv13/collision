@@ -6,6 +6,8 @@ local grect        = require( "gears.geometry" ).rectangle
 local placement    = require( "awful.placement")
 local areamap      = require( "collision.areamap" )
 local focus_arrow  = require( "collision.widgets.focus_arrow" )
+local gtable = require("gears.table")
+
 
 local module = {}
 local wiboxes = nil

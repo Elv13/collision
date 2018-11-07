@@ -4,6 +4,7 @@ local util         = require( "awful.util"     )
 local awful        = require( "awful"          )
 local glib         = require( "lgi"            ).GLib
 local col_utils    = require( "collision.util" )
+local unpack = unpack or table.unpack -- luacheck: globals unpack (compatibility with Lua 5.1)
 local module = {
   _focus    = require( "collision.focus"    ),
   _resize   = require( "collision.resize"   ),

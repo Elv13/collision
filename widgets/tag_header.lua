@@ -44,6 +44,7 @@ local function highlightable_label(text)
                 align  = "center",
                 valign = "center",
                 id     = "text",
+                wrap   = false,
                 widget = wibox.widget.textbox,
             },
             id          = "bg",
@@ -58,7 +59,7 @@ local function highlightable_label(text)
     }
     assert(w.highlight)
     rawset(w,"set_text", set_text)
-    return w
+    return w, w:get_children_by_id("bg")[1]
 end
 
 local radius = 3
@@ -66,14 +67,14 @@ local radius = 3
 local function pointer_draw(self, context, cr, width, height)
     -- This assumes the "layout()" function has already been called
 
-    local add_x, add_y = 0, 0
-
     local line_y_offset, max_line_y_offset = nil
     local line_spacing = cr.line_width * 2
+    local last_x, last_w_x = 0,0
+    local clear_at = 0
 
     local ret = {}
 
-    local function handle_hierarchy(h, count)
+    local function handle_hierarchy(h, count, next_count)
         local widget = h:get_widget()
 
         -- All sub-areas of a stack are to be displayed in a "fair" grid.
@@ -94,29 +95,92 @@ local function pointer_draw(self, context, cr, width, height)
                 line_y_offset = max_line_y_offset
             end
 
-            cr:move_to(dx+point.x, dy+point.y)
-            cr:line_to(dx+point.x, dy+point.y + line_y_offset)
-            cr:line_to(x+width/2,dy+point.y + line_y_offset)
-            cr:line_to(x+width/2,y-radius)
 
-            line_y_offset = line_y_offset - line_spacing
+            -- TODO Corner case 0: There less than max_line_y_offset/(line_spacing*2)
+            -- lines remaining
+            if line_y_offset == max_line_y_offset and last_w_x < point.x+dx then
+                -- Corner case 1: Possible to access the left side |___
+                cr:move_to(dx+point.x, dy+point.y)
+                cr:line_to(dx+point.x, y+height/2)
+                cr:line_to(x+width/2, y+height/2)
+                cr:stroke()
 
-            if line_y_offset <= 0 then
-                line_y_offset = max_line_y_offset
+                cr:arc(dx+point.x, dy+point.y, radius, 0, 2*math.pi)
+                cr:fill()
+
+                cr:arc(x-radius/2, y+height/2, radius, 0, 2*math.pi)
+                cr:fill()
+            elseif line_y_offset == max_line_y_offset and last_w_x < point.x+point.width-point.height then
+                -- Corner case 2: Possible to access the left side by moving the origin |___
+                cr:move_to(point.x+point.width-point.height, dy+point.y)
+                cr:line_to(point.x+point.width-point.height, y+height/2)
+                cr:line_to(x+width/2, y+height/2)
+                cr:stroke()
+
+                cr:arc(point.x+point.width-point.height, dy+point.y, radius, 0, 2*math.pi)
+                cr:fill()
+
+                cr:arc(x-radius/2, y+height/2, radius, 0, 2*math.pi)
+                cr:fill()
+
+            elseif line_y_offset == max_line_y_offset and point.x+dx > clear_at then
+                -- Corner case 4: Add an extra line to save another layer
+
+                local extra_y = dy+point.y + line_y_offset + line_spacing*1.1
+
+                cr:move_to(dx+point.x, dy+point.y)
+                cr:line_to(dx+point.x, extra_y)
+                cr:line_to(last_w_x, extra_y)
+                cr:line_to(last_w_x, extra_y)
+                cr:line_to(last_w_x, y+height/2)
+                cr:line_to(x+width/2, y+height/2)
+                cr:stroke()
+
+                cr:arc(dx+point.x, dy+point.y, radius, 0, 2*math.pi)
+                cr:fill()
+
+                cr:arc(x-radius/2, y+height/2, radius, 0, 2*math.pi)
+                cr:fill()
+
+                clear_at = last_w_x + 2*line_spacing
+                -- TODO Corner case 5: Add as many corner as required
+            else
+                -- Normal case ^---___
+
+                -- Corner case 3: There is enough room to avoid an offset
+                if dx+point.x < last_x then
+                    line_y_offset = line_y_offset - line_spacing
+                end
+
+                cr:move_to(dx+point.x, dy+point.y)
+                cr:line_to(dx+point.x, dy+point.y + line_y_offset)
+                cr:line_to(x+width/2,dy+point.y + line_y_offset)
+                cr:line_to(x+width/2,y-radius)
+
+
+                if line_y_offset <= 0 then
+                    line_y_offset = max_line_y_offset
+                end
+
+                cr:stroke()
+
+                cr:arc(dx+point.x, dy+point.y, radius, 0, 2*math.pi)
+                cr:fill()
+
+                cr:arc(x+width/2, y-radius, radius, 0, 2*math.pi)
+                cr:fill()
+
+                last_x = x+width/2 + line_spacing
+                clear_at = 99999
             end
 
-            cr:stroke()
-
-            cr:arc(dx+point.x, dy+point.y, radius, 0, 2*math.pi)
-            cr:fill()
-
-            cr:arc(x+width/2, y-radius, radius, 0, 2*math.pi)
-            cr:fill()
+            last_w_x = x+width + line_spacing
+        else
+            for _, child in ipairs(h:get_children()) do
+                handle_hierarchy(child, next_count, #h:get_children())
+            end
         end
 
-        for _, child in ipairs(h:get_children()) do
-            handle_hierarchy(child, #h:get_children())
-        end
     end
 
     handle_hierarchy(context.wibox._drawable._widget_hierarchy)
@@ -167,14 +231,14 @@ local function new(s)
 
         w2:set_widget( wibox.widget {
             {
+                id     = "pointer_widget",
+                widget = pointer_widget,
+            },
+            {
                 nil,
                 nil,
                 l,
                 widget     = wibox.layout.align.vertical,
-            },
-            {
-                id     = "pointer_widget",
-                widget = pointer_widget,
             },
             widget = wibox.layout.stack,
         })
@@ -184,12 +248,12 @@ local function new(s)
         local rects, r_w = {}, s.geometry.width / #pos
 
         for k, rect in ipairs(pos) do
-            local wdg = highlightable_label(rect.tag.name.." Mod4+"..k)
+            local wdg, wdg_point = highlightable_label(rect.tag.name.." Mod4+"..k)
 
             l:add(wdg)
             l.by_id[tostring(k)] = wdg
             rect.x = rect.x - s.geometry.x
-            pointer:add_point_to_widget(rect, wdg)
+            pointer:add_point_to_widget(rect, wdg_point)
             tags_by_id[tostring(k)] = rect.tag
 
             table.insert(rects, {
