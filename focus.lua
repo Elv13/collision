@@ -34,6 +34,7 @@ local function init()
     local bg_focus = beautiful.collision_focus_bg_center or beautiful.bg_urgent or "#ff0000"
     local sw       = beautiful.collision_shape_width or 75
     local sh       = beautiful.collision_shape_height or 75
+    local cshape   = beautiful.collision_focus_shape_center or shape.circle
 
     for k,v in ipairs({"up","right","down","left","center"}) do
         wiboxes[v] = wibox {
@@ -42,7 +43,7 @@ local function init()
             ontop  = true
         }
 
-        local r_shape = v == "center" and shape.circle or s
+        local r_shape = v == "center" and cshape or s
         local r_bg    = v == "center" and bg_focus    or bg
         local x = sw/2 - padding
         local y = sh/2 - padding

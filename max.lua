@@ -8,7 +8,6 @@ local surface      = require( "gears.surface"    )
 local layout       = require( "collision.layout" )
 local util         = require( "collision.util"   )
 local shape        = require( "gears.shape"      )
-local shape        = require( "gears.shape"      )
 local pango = require("lgi").Pango
 local pangocairo = require("lgi").PangoCairo
 local module = {}
@@ -66,6 +65,7 @@ local function draw_shape(s,collection,current_idx,icon_f,y,text_height)
   -- Resize the wibox
   w.x,w.y,w.width,w.height = math.floor(geo.x),math.floor(y or (wa.y+wa.height) - margin - height),math.floor(geo.width),math.floor(height)
 
+  local rshape = beautiful.collision_max_shape or shape.rounded_rect
   local img = cairo.ImageSurface(cairo.Format.ARGB32, geo.width,geo.height)
   local img3 = cairo.ImageSurface(cairo.Format.ARGB32, geo.width,geo.height)
   local cr = cairo.Context(img)
@@ -74,8 +74,11 @@ local function draw_shape(s,collection,current_idx,icon_f,y,text_height)
   cr:paint()
 
   -- Get the colors
-  local white,bg = color("#FFFFFF"),color(beautiful.menu_bg_normal or beautiful.bg_normal)
-  local nornal,focus = color(beautiful.fg_normal),color(beautiful.bg_urgent)
+  local white,bg = color("#FFFFFF"),color(
+    beautiful.collision_max_bg or beautiful.menu_bg_normal or beautiful.bg_normal
+  )
+
+  local normal, focus = color(beautiful.collision_max_fg or beautiful.fg_normal), color(beautiful.bg_urgent)
 
   -- Init the text properties
   if not pango_l then
@@ -90,17 +93,16 @@ local function draw_shape(s,collection,current_idx,icon_f,y,text_height)
     -- Shape bounding
     cr:set_source(white)
 
-    local s = shape.transform(shape.rounded_rect) : translate(dx, 0)
+    local s = shape.transform(rshape) : translate(dx, 0)
     s(cr, width, height, 10)
     cr:fill()
 
     -- Borders and background
-    cr3:set_source(k==current_idx and focus or nornal)
-    util.draw_round_rect(cr3,dx+border,0+border,width-2*border,height-2*border,rad)
+    cr3:set_source(k==current_idx and focus or normal)
 
---     cr3:move_to(0,0)
---     s = shape.transform(shape.rounded_rect) : translate(dx+border, border)
---     s(cr3, width-2*border, height-2*border, rad)
+    cr3:move_to(0,0)
+    s = shape.transform(rshape) : translate(dx+border, border)
+    s(cr3, width-2*border, height-2*border, rad)
 
     cr3:set_line_width(2*border + 4) -- The 4 is required to cover the non-antialiased region
     cr3:stroke_preserve()
@@ -118,7 +120,7 @@ local function draw_shape(s,collection,current_idx,icon_f,y,text_height)
     end
 
     -- Print a pretty line
-    local r,g,b = util.get_rgb()
+    local r,g,b = util.get_rgb(normal)
     cr3:set_source_rgba(r,g,b,0.7)
     cr3:set_line_width(1)
     cr3:move_to(dx+margin,height - text_height-border)
@@ -166,7 +168,7 @@ local function client_icon(c,width,height)
   local w,h = geom.width*scale,geom.height*scale
 
   -- Create a mask
-  local s = shape.transform(shape.rounded_rect) : translate((width-w)/2, (height-h)/2)
+  local s = shape.transform(rshape) : translate((width-w)/2, (height-h)/2)
   s(cr, w, h, 10)
 
   cr:clip()

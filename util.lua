@@ -9,9 +9,9 @@ local module = {settings={}}
 
 
 local rr,rg,rb
-function module.get_rgb()
+function module.get_rgb(col)
   if not rr then
-    local pat = color(beautiful.fg_normal)
+    local pat = color(col or beautiful.fg_normal)
     local s,r,g,b,a = pat:get_rgba()
     rr,rg,rb = r,g,b
   end

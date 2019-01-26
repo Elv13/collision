@@ -86,11 +86,16 @@ function module.draw(tag,cr,width,height)
   local scr_geo = capi.screen[s or 1].workarea
   local ratio = height/scr_geo.height
   local w_stretch = width/(scr_geo.width*ratio)
-  local r,g,b = util.get_rgb()
+  local r,g,b = util.get_rgb(
+    beautiful.collision_max_fg or beautiful.fg_normal
+  )
+
+  local lshape = beautiful.collision_layout_shape or shape.rounded_rect
+
   cr:set_line_width(3)
   for c,ll in ipairs({l,l2}) do
     for c,geom in pairs(ll) do
-      shape.transform(shape.rounded_rect)
+      shape.transform(lshape)
         : translate(geom.x*ratio*w_stretch+margin, geom.y*ratio+margin) (
             cr,
             geom.width*ratio*w_stretch-margin*2,
