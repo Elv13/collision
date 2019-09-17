@@ -158,6 +158,7 @@ local function client_icon(c,width,height)
   -- Get the content
   --TODO detect pure black frames
   local img = cairo.ImageSurface(cairo.Format.ARGB32, width, height)
+  local rshape = beautiful.collision_max_shape or shape.rounded_rect
   local cr = cairo.Context(img)
 
   local geom = c:geometry()
