@@ -135,9 +135,9 @@ local function draw_shape(s,collection,current_idx,icon_f,y,text_height)
     cr3:show_layout(pango_l)
 
     -- Draw an arrow
-    if k == current_idx-1 then
+    if current_idx and k == current_idx-1 then
       create_arrow(cr3,dx,0,width,height,1)
-    elseif k == current_idx+1 then
+    else
       create_arrow(cr3,dx,0,width,height,nil)
     end
 
@@ -283,6 +283,7 @@ function module.display_tags(s,direction,c,is_swap,is_max)
 end
 
 function module.change_tag(mod,key,event,direction,is_swap,is_max)
+  local s = capi.client.focus and capi.client.focus.screen or capi.mouse.screen
   change_tag(s,direction,is_swap)
   return true
 end
