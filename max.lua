@@ -212,7 +212,7 @@ function module.display_clients(s,direction)
     awful.client.focus.byidx(direction == "right" and 1 or -1)
     capi.client.focus:raise()
   end
-  local clients = awful.client.tiled(s)
+  local clients = awful.client.visible(s)
   local fk = awful.util.table.hasitem(clients,capi.client.focus)
   draw_shape(s,clients,fk,client_icon,nil,50)
 end
@@ -222,7 +222,7 @@ function module.change_focus(mod,key,event,direction,is_swap,is_max)
   local c = capi.client.focus
   local s = c.screen
   c:raise()
-  local clients = awful.client.tiled(s)
+  local clients = awful.client.visible(s)
   local fk = awful.util.table.hasitem(clients,c)
   draw_shape(s,clients,fk,client_icon,nil,50)
   return true
