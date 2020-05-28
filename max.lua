@@ -135,9 +135,9 @@ local function draw_shape(s,collection,current_idx,icon_f,y,text_height)
     cr3:show_layout(pango_l)
 
     -- Draw an arrow
-    if k == current_idx-1 then
+    if current_idx and k == current_idx-1 then
       create_arrow(cr3,dx,0,width,height,1)
-    elseif k == current_idx+1 then
+    else
       create_arrow(cr3,dx,0,width,height,nil)
     end
 
@@ -212,7 +212,7 @@ function module.display_clients(s,direction)
     awful.client.focus.byidx(direction == "right" and 1 or -1)
     capi.client.focus:raise()
   end
-  local clients = awful.client.tiled(s)
+  local clients = awful.client.visible(s)
   local fk = awful.util.table.hasitem(clients,capi.client.focus)
   draw_shape(s,clients,fk,client_icon,nil,50)
 end
@@ -222,7 +222,7 @@ function module.change_focus(mod,key,event,direction,is_swap,is_max)
   local c = capi.client.focus
   local s = c.screen
   c:raise()
-  local clients = awful.client.tiled(s)
+  local clients = awful.client.visible(s)
   local fk = awful.util.table.hasitem(clients,c)
   draw_shape(s,clients,fk,client_icon,nil,50)
   return true
@@ -283,6 +283,7 @@ function module.display_tags(s,direction,c,is_swap,is_max)
 end
 
 function module.change_tag(mod,key,event,direction,is_swap,is_max)
+  local s = capi.client.focus and capi.client.focus.screen or capi.mouse.screen
   change_tag(s,direction,is_swap)
   return true
 end
