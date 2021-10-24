@@ -42,7 +42,7 @@ end
 function module.get_geometry(tag)
   local cls,results,flt = {},setmetatable({},{__mode="k"}),{}
   local s = tag.screen
-  local l = awful.tag.getproperty(tag,"layout")
+  local l = tag.layout
   local focus,focus_wrap = capi.client.focus,nil
   for k,c in ipairs (tag:clients()) do
     -- Handle floating client separately
