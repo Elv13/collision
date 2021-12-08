@@ -213,7 +213,7 @@ local function bydirection(dir, c, swap,max)
         end
         target = grect.get_in_direction(dir, screen_geom, c:geometry())
         if target and target ~= c.screen then
-          local t = target.selected_tag
+          local t = capi.screen[target].selected_tag
           c.screen = target
           c:tags({t})
           c:raise()
