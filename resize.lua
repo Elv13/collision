@@ -11,10 +11,10 @@ local values = {"top"     , "top_right"  , "right" ,  "bottom_right" ,
                 "bottom"  , "bottom_left", "left"  ,  "top_left"     }
 
 local invert = {
-  left  = "right",
-  right = "left" ,
-  up    = "down" ,
-  down  = "up"   ,
+    left  = "right",
+    right = "left" ,
+    up    = "down" ,
+    down  = "up"   ,
 }
 
 local r_ajust = {
@@ -22,6 +22,18 @@ local r_ajust = {
     right = function(c, d) return { width  = c.width  + d,                       } end,
     up    = function(c, d) return { y      = c.y      - d, height = c.height + d } end,
     down  = function(c, d) return { height = c.height + d,                       } end,
+}
+
+-- Resize tiled using the keyboard
+local layouts_all = {
+    [awful.layout.suit.floating]    = { right = "" },
+    [awful.layout.suit.tile]        = { right = {mwfact= 0.05}, left = {mwfact=-0.05}, up ={wfact=-0.1  }, down = {wfact = 0.1 } },
+    [awful.layout.suit.tile.left]   = { right = {mwfact=-0.05}, left = {mwfact= 0.05}, up ={wfact= 0.1  }, down = {wfact =-0.1 } },
+    [awful.layout.suit.tile.bottom] = { right = {wfact=-0.1  }, left = {wfact= 0.1  }, up ={mwfact=-0.05}, down = {mwfact= 0.05} },
+    [awful.layout.suit.tile.top]    = { right = {wfact=-0.1  }, left = {wfact= 0.1  }, up ={mwfact= 0.05}, down = {mwfact=-0.05} },
+    [awful.layout.suit.spiral]      = { right = {wfact=-0.1  }, left = {wfact= 0.1  }, up ={mwfact= 0.05}, down = {mwfact=-0.05} },
+    [awful.layout.suit.magnifier]   = { right = {mwfact= 0.05}, left = {mwfact=-0.05}, up ={mwfact= 0.05}, down = {mwfact=-0.05} },
+    -- The other layouts cannot be resized using variables
 }
 
 local function create_indicators()
@@ -132,7 +144,19 @@ function module.resize(mod,key,event,direction,is_swap,is_max)
     local del = is_swap and -100 or 100
     direction = is_swap and invert[direction] or direction
 
-    c:emit_signal("request::geometry", "mouse.resize", r_ajust[direction](c, del))
+    local lay = awful.layout.get(c.screen)
+
+    if c.floating or lay == awful.layout.suit.floating then
+        c:emit_signal("request::geometry", "mouse.resize", r_ajust[direction](c, del))
+    elseif layouts_all[lay] then
+        local ret = layouts_all[lay][direction]
+        if ret.mwfact then
+            awful.tag.incmwfact(ret.mwfact)
+        end
+        if ret.wfact then
+            awful.client.incwfact(ret.wfact, c)
+        end
+    end
 
     return true
 end
