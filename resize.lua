@@ -29,13 +29,15 @@ local function create_indicators()
     local angle   = -((2*math.pi)/8)
 
     -- Get the parameters
-    local size    = beautiful.collision_resize_width or 40
-    local s       = beautiful.collision_resize_shape or shape.circle
-    local bw      = beautiful.collision_resize_border_width
-    local bc      = beautiful.collision_resize_border_color
-    local padding = beautiful.collision_resize_padding or 7
-    local bg      = beautiful.collision_resize_bg or beautiful.bg_alternate or "#ff0000"
-    local fg      = beautiful.collision_resize_fg or beautiful.fg_normal    or "#0000ff"
+    local size     = beautiful.collision_resize_width or 40
+    local s        = beautiful.collision_resize_shape or shape.circle
+    local bw       = beautiful.collision_resize_border_width
+    local bc       = beautiful.collision_resize_border_color
+    local padding  = beautiful.collision_resize_padding or 7
+    local bg       = beautiful.collision_resize_bg or beautiful.bg_alternate or "#ff0000"
+    local fg       = beautiful.collision_resize_fg or beautiful.fg_normal    or "#0000ff"
+    local arrow_bc = beautiful.collision_resize_arrow_border_color
+    local arrow_bw = beautiful.collision_resize_arrow_border_width or 0
 
     for k,v in ipairs(values) do
         local w = wibox {
@@ -47,7 +49,7 @@ local function create_indicators()
 
         angle = angle + (2*math.pi)/8
 
-        local tr = (size - 2*padding) / 2
+        local tr = (size - 2*arrow_bw - 2*padding) / 2
 
         w:setup {
             {
@@ -59,8 +61,10 @@ local function create_indicators()
                         : translate( tr,tr   )
                         : rotate   ( angle   )
                         : translate( -tr,-tr ),
-                    bg     = fg,
-                    widget = wibox.container.background
+                    bg           = fg,
+                    border_color = arrow_bc,
+                    border_width = arrow_bw,
+                    widget       = wibox.container.background
                 },
                 margins = padding,
                 widget  = wibox.container.margin,
