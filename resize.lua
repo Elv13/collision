@@ -5,7 +5,7 @@ local awful     = require( "awful"         )
 local surface   = require( "gears.surface" )
 local shape     = require( "gears.shape"   )
 
-local module,indicators,cur_c = {},nil,nil
+local module, indicators, cur_c, sizeboxes = {},nil,nil, {}
 
 local values = {"top"     , "top_right"  , "right" ,  "bottom_right" ,
                 "bottom"  , "bottom_left", "left"  ,  "top_left"     }
@@ -35,6 +35,58 @@ local layouts_all = {
     [awful.layout.suit.magnifier]   = { right = {mwfact= 0.05}, left = {mwfact=-0.05}, up ={mwfact= 0.05}, down = {mwfact=-0.05} },
     -- The other layouts cannot be resized using variables
 }
+
+local function update_size_boxes(c, float_only)
+    if not awful.popup then return end
+    if not beautiful.collision_resize_size then return end
+
+    local clients = c and {c} or awful.client.visible()
+
+    if c and float_only then
+        for c2, wb in pairs(sizeboxes) do
+            if c2 ~= c and not c2.floating then
+                wb.visible = false
+            end
+        end
+    end
+
+    for _, c in ipairs(clients) do
+        if (not float_only) or c.floating then
+            local wb = sizeboxes[c]
+
+            if not wb then
+                sizeboxes[c] = awful.popup {
+                    widget = {
+                        {
+                            id     = "tb",
+                            text   = "0x0",
+                            font   = beautiful.collision_resize_size_font,
+                            widget = wibox.widget.textbox
+                        },
+                        margins = beautiful.collision_resize_size_padding or 4,
+                        widget  = wibox.container.margin
+                    },
+                    visible      = false,
+                    ontop        = true,
+                    bg           = beautiful.collision_resize_size_bg or beautiful.bg_normal,
+                    fg           = beautiful.collision_resize_size_fg or beautiful.fg_normal,
+                    border_width = beautiful.collision_resize_size_border_width,
+                    border_color = beautiful.collision_resize_size_border_color,
+                    shape        = beautiful.collision_resize_shape,
+                    placement    = function(o)
+                        return awful.placement.centered(o, {parent = c})
+                    end,
+                }
+
+                wb = sizeboxes[c]
+            end
+
+            local geo = c:geometry()
+            sizeboxes[c].visible = true
+            sizeboxes[c].widget.tb.text = geo.width .. "x" .. geo.height
+        end
+    end
+end
 
 local function create_indicators()
     local ret     = {}
@@ -103,12 +155,16 @@ end
 function module.hide()
     if not indicators then return end
 
-    for k,v in ipairs(values) do indicators[v].visible = false end
+    for k, v in ipairs(values) do indicators[v].visible = false end
+
+    for _, wb in pairs(sizeboxes) do wb.visible = false end
 
     if not cur_c then return end
 
     cur_c:disconnect_signal("property::geometry", module.display)
     cur_c = nil
+
+    sizeboxes = {}
 end
 
 function module.display(c,toggle)
@@ -135,6 +191,8 @@ function module.display(c,toggle)
         awful.placement[v](w, {parent=c})
         w.visible = true
     end
+
+    update_size_boxes(c.floating and c or nil, c.floating)
 end
 
 function module.resize(mod,key,event,direction,is_swap,is_max)
@@ -148,6 +206,7 @@ function module.resize(mod,key,event,direction,is_swap,is_max)
 
     if c.floating or lay == awful.layout.suit.floating then
         c:emit_signal("request::geometry", "mouse.resize", r_ajust[direction](c, del))
+        update_size_boxes(c, true)
     elseif layouts_all[lay] then
         local ret = layouts_all[lay][direction]
         if ret.mwfact then
@@ -156,7 +215,10 @@ function module.resize(mod,key,event,direction,is_swap,is_max)
         if ret.wfact then
             awful.client.incwfact(ret.wfact, c)
         end
+
+        update_size_boxes()
     end
+
 
     return true
 end

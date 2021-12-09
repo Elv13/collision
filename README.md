@@ -108,6 +108,14 @@ namespace
 | collision_resize_fg                 | The resize handles arrow color                         |
 | collision_resize_arrow_border_color | The arrow border color                                 |
 | collision_resize_arrow_border_width | The arrow border width                                 |
+| collision_resize_size               | Enable the size widget when resizng                    |
+| collision_resize_shape              |                                                        |
+| collision_resize_size_border_width  |                                                        |
+| collision_resize_size_border_color  |                                                        |
+| collision_resize_size_font          |                                                        |
+| collision_resize_size_shape         |                                                        |
+| collision_resize_size_bg            |                                                        |
+| collision_resize_size_fg            |                                                        |
 | collision_focus_shape               | The outer shape of the "arrow" widgets                 |
 | collision_focus_border_width        |                                                        |
 | collision_focus_border_color        |                                                        |
